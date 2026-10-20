@@ -74,6 +74,37 @@ it('keeps the full rock mask period when the diffuse texture repeats inside it',
   assert.equal(opaque.stats.triangles, 3, 'an opaque material keeps faces even when source texels have zero alpha')
 })
 
+it('seals small open rail ends only when the surfaces share an attachment', async () => {
+  const texture = { id: 'rail', width: 1, height: 1, rgba: Uint8Array.of(120, 70, 40, 255) }
+  const batch = positions => ({ positions: Float32Array.from(positions),
+    normals: Float32Array.of(0, 1, 0, 0, 1, 0, 0, 1, 0),
+    colors: new Float32Array(12).fill(1), textureCoordinates: new Float32Array(6),
+    texture, alphaCutoff: .5 })
+  const wall = batch([-1, 0, 0, 0, 0, 0, 0, .15, 1])
+  const ramp = batch([0, 0, 0, 1, 0, 0, 0, .05, 1.03])
+  const original = structuredClone([wall, ramp])
+  const exportBatches = batches => worldGlb({ ...createWorldWebGlPlan({ items: [] }),
+    texturedTriangles: batches }, { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  assert.equal((await exportBatches([wall, ramp])).stats.triangles, 4,
+    'two triangles seal the open cross-section without moving either profile')
+  assert.deepEqual([wall, ramp], original)
+  const detached = structuredClone(ramp)
+  detached.positions[2] = .01
+  assert.equal((await exportBatches([wall, detached])).stats.triangles, 2,
+    'nearby separate surfaces without an exact shared attachment remain separate')
+  const distant = structuredClone(ramp)
+  distant.positions[7] = .4
+  assert.equal((await exportBatches([wall, distant])).stats.triangles, 2,
+    'an opening larger than 1/8 world unit is preserved')
+  assert.equal((await exportBatches([wall, { ...ramp, alphaCutoff: undefined }])).stats.triangles, 2,
+    'ordinary opaque object geometry is preserved')
+  const closed = { ...ramp, positions: Float32Array.from([...ramp.positions, ...ramp.positions]),
+    normals: Float32Array.from([...ramp.normals, ...ramp.normals]),
+    colors: new Float32Array(24).fill(1), textureCoordinates: new Float32Array(12) }
+  assert.equal((await exportBatches([wall, closed])).stats.triangles, 3,
+    'an edge used by two faces is not an open end')
+})
+
 it('keeps visible cliff walls under the rock and pins their shared plateau vertices', async () => {
   const positions = Float32Array.of(0, 0, 0, 2, 0, 0, 0, 0, 2,
     0, 0, 0, 2, 0, 0, 0, 1, 0,

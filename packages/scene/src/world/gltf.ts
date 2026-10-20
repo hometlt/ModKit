@@ -19,6 +19,8 @@
  * surfaces. Faces fully covered by rock are omitted; visible vertical faces remain.
  * Alpha-tested model faces that are fully discarded over their filtered UV rectangle are omitted
  * too: transparent cliff feet can coincide exactly with ground and corrupt a viewer's depth prepass.
+ * Open textured surface edges with a common nearby attachment are sealed across gaps up to 1/8
+ * world unit. Narrow strips retain the edge material; the original meshes and ground do not move.
  *
  * Limits of this profile: one moment (clip time 0, the plan's poses); no animation, skins or
  * morph targets (geometry is baked); material programs (layered game shaders), team colour and
@@ -500,7 +502,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     const positions = (joinedGround.get(primitive.id) ?? placedPrimitive(primitive)).positions
     for (let index = 0; index < positions.length; index += 3) groundAnchors.add(groundSeamKey(positions, index))
   }
-  for (const primitive of scene.primitives) {
+  for (const primitive of [...scene.primitives, ...maskedSurfaceSeams(scene, signal)]) {
     signal?.throwIfAborted()
     if (primitive.topology !== 'triangles' || primitive.hidden === true || isTerrainLayer(primitive.id)) {
       omitted++
@@ -809,6 +811,111 @@ function bakeProgramSurface(
 }
 
 const clamp01 = (value: number) => (Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0)
+
+/**
+ * Seal small gaps between open ends of masked world surfaces (notably ramp rails). Matching edges
+ * must face each other on one vertical plane and have a shared attachment within 1/4 unit. This
+ * preserves authored profiles instead of welding unlike bevels or moving the ramp's ground.
+ */
+function maskedSurfaceSeams(scene: SceneRendererScene, signal?: AbortSignal): SceneRendererPrimitive[] {
+  type Point = readonly [number, number, number]
+  type Edge = { primitive: SceneRendererPrimitive; a: number; b: number; pa: Point; pb: Point;
+    count: number; attached: Set<string> }
+  type Attachment = { point: Point; owners: Set<string> }
+  const pointKey = (point: Point) => point.map(value => Math.round(value * 10000)).join(':')
+  const distance = (a: Point, b: Point) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+  const cell = (point: Point) => point.map(value => Math.floor(value / .25))
+  const materials = new Map(scene.materials?.map(material => [material.id, material]))
+  const planes = new Map<string, Edge[]>(), attachments = new Map<string, Attachment>()
+  for (const primitive of scene.primitives) {
+    signal?.throwIfAborted()
+    if (!primitive.id.startsWith('world/textured-') || primitive.hidden || primitive.transform !== undefined ||
+      primitive.topology !== 'triangles' || primitive.textureCoordinates === undefined ||
+      materials.get(primitive.materialId ?? '')?.alphaMode !== 'mask') continue
+    const at = (index: number): Point => [primitive.positions[index * 3]!,
+      primitive.positions[index * 3 + 1]!, primitive.positions[index * 3 + 2]!]
+    const edges = new Map<string, Edge>()
+    const count = primitive.indices?.length ?? primitive.positions.length / 3
+    for (let corner = 0; corner + 2 < count; corner += 3) for (let side = 0; side < 3; side++) {
+      const a = primitive.indices?.[corner + side] ?? corner + side
+      const b = primitive.indices?.[corner + (side + 1) % 3] ?? corner + (side + 1) % 3
+      const pa = at(a), pb = at(b), ka = pointKey(pa), kb = pointKey(pb)
+      if (ka === kb) continue
+      const key = [ka, kb].sort().join('/'), previous = edges.get(key)
+      if (previous !== undefined) previous.count++
+      else edges.set(key, { primitive, a, b, pa, pb, count: 1, attached: new Set() })
+    }
+    for (const edge of edges.values()) {
+      if (edge.count !== 1) continue
+      for (const point of [edge.pa, edge.pb]) {
+        const key = pointKey(point)
+        let attachment = attachments.get(key)
+        if (attachment === undefined) attachments.set(key, attachment = { point, owners: new Set() })
+        attachment.owners.add(primitive.id)
+      }
+      const span = Math.hypot(edge.pa[0] - edge.pb[0], edge.pa[2] - edge.pb[2])
+      if (span < .001 || Math.abs(edge.pa[1] - edge.pb[1]) > span + 1e-4) continue
+      for (const axis of [0, 2] as const) if (Math.abs(edge.pa[axis] - edge.pb[axis]) < 1e-4) {
+        const key = `${axis}:${Math.round(edge.pa[axis] * 10000)}`
+        let plane = planes.get(key)
+        if (plane === undefined) planes.set(key, plane = [])
+        plane.push(edge)
+        break
+      }
+    }
+  }
+  const cells = new Map<string, Attachment[]>()
+  for (const attachment of attachments.values()) if (attachment.owners.size > 1) {
+    const key = cell(attachment.point).join(':')
+    let entries = cells.get(key)
+    if (entries === undefined) cells.set(key, entries = [])
+    entries.push(attachment)
+  }
+  const strips: SceneRendererPrimitive[] = []
+  for (const edges of planes.values()) {
+    signal?.throwIfAborted()
+    for (const edge of edges) for (const point of [edge.pa, edge.pb]) {
+      const at = cell(point)
+      for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++)
+        for (const attachment of cells.get(`${at[0]! + x}:${at[1]! + y}:${at[2]! + z}`) ?? [])
+          if (attachment.owners.has(edge.primitive.id) && distance(attachment.point, point) < .25)
+            for (const owner of attachment.owners) edge.attached.add(owner)
+    }
+    for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) {
+      const a = edges[i]!, b = edges[j]!
+      if (a.primitive === b.primitive || !a.attached.has(b.primitive.id)) continue
+      const gap = Math.max(distance(a.pa, b.pb), distance(a.pb, b.pa))
+      if (gap > .125 || gap < 1e-4) continue
+      const dot = (a.pb[0] - a.pa[0]) * (b.pb[0] - b.pa[0]) +
+        (a.pb[1] - a.pa[1]) * (b.pb[1] - b.pa[1]) +
+        (a.pb[2] - a.pa[2]) * (b.pb[2] - b.pa[2])
+      if (dot > -.95 * distance(a.pa, a.pb) * distance(b.pa, b.pb)) continue
+      const positions: number[] = [], uv: number[] = [], normals: number[] = [], colors: number[] = []
+      const vertices = [[a.pa, a.a], [a.pb, a.b], [b.pa, a.b],
+        [a.pa, a.a], [b.pa, a.b], [b.pb, a.a]] as const
+      for (const [point, index] of vertices) {
+        positions.push(...point)
+        uv.push(...a.primitive.textureCoordinates!.subarray(index * 2, index * 2 + 2))
+        if (a.primitive.colors !== undefined)
+          colors.push(...a.primitive.colors.subarray(index * 4, index * 4 + 4))
+      }
+      for (let start = 0; start < 18; start += 9) {
+        const u = [0, 1, 2].map(k => positions[start + 3 + k]! - positions[start + k]!)
+        const v = [0, 1, 2].map(k => positions[start + 6 + k]! - positions[start + k]!)
+        const normal = [u[1]! * v[2]! - u[2]! * v[1]!, u[2]! * v[0]! - u[0]! * v[2]!,
+          u[0]! * v[1]! - u[1]! * v[0]!]
+        const length = Math.hypot(...normal) || 1
+        for (let vertex = 0; vertex < 3; vertex++) normals.push(...normal.map(value => value / length))
+      }
+      strips.push({ id: `world/seam-${strips.length}`, topology: 'triangles',
+        ...(a.primitive.materialId === undefined ? {} : { materialId: a.primitive.materialId }),
+        positions: Float32Array.from(positions), normals: Float32Array.from(normals),
+        textureCoordinates: Float32Array.from(uv),
+        ...(colors.length === 0 ? {} : { colors: Float32Array.from(colors) }) })
+    }
+  }
+  return strips
+}
 
 /** Unit normals, or none when absent or of the wrong length; zero vectors point up. */
 function unitNormals(primitive: SceneRendererPrimitive): Float32Array | undefined {
