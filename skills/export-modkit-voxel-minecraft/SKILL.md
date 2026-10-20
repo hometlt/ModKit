@@ -40,8 +40,8 @@ materials without native slabs, including grass and sand. The vertical reference
 lowest inferred playable cliff level at Minecraft Y=64, matching the separate cliff-world frame.
 The receipt records `materialMapping`, `includeCliffs`, `waterBedColumns` and `sourceFrame`.
 Inspect this mapping before acceptance; green terrain must not silently become moss.
-Dark baked terrain colours are brightened in this mode: black concrete becomes smooth stone,
-deepslate paving becomes stone bricks, and dark brown terracotta becomes ordinary terracotta.
+Urban/interior/platform textures use dark `deepslate_bricks` and `deepslate_brick_slab`.
+Vegetation and sand semantics win first, so a green city texture still becomes grass.
 
 For terrain with the already styled side modules, keep `includeCliffs: true` and add
 `cliffFamilies` (the same explicit `{typePrefix, style}` array as the cliff-library `families`),
@@ -64,6 +64,35 @@ A fully filled 528×528 terrain has 1089 saved chunks. When the wide native view
 exactly those chunks, render it without an explicit `resourceIds` array (that array is limited
 to 1024); verify `converted/total` against all 1089. Otherwise render verified subsets and report
 their coverage. Extract every `regionFiles` entry before reopening the saved world.
+
+## Source water and semantic map objects
+
+Set `includeWater: true` on `minecraft-java-terrain-world` to fill the source water zones at their
+converted elevations. The water-free default remains available. Preserve the clay bottom; use the
+shared native writer's distinct OCEAN_FLOOR/WORLD_SURFACE heightmaps and bounded skylight through
+water/leaves. Slabs below water or a distant canopy must not become double slabs automatically.
+
+Before adding props, export `map.export-native` with `formatId: "minecraft-java-object-library"`
+and `options: {name: "amphion-object-catalog"}`, retaining its binary. Save and verify the ZIP,
+extract `object-mapping.json`, native structure NBTs under `data/modkit/structure/map_objects/`,
+and `preview-world.zip` through MCP. Reopen and render the native gallery, inspect the actual
+matching table and samples, then export the terrain with `objectMode: "structures"`.
+
+Both targets share the same semantic plan and block structures. Living trees use logs/persistent
+leaves, grouped trees use groves, sight blockers use three-block leaf bushes, RockMix is a low
+pebble layer, large rocks are boulders, resources use crystal/gas structures, and fences/ruins/
+crates/lamps use their Minecraft counterparts. Source names are data, not a promise that every
+arbitrary model has a meaningful substitute. Keep skipped helper/shoreline/decal/effect types
+and unsupported living creatures in the correspondence report; do not silently turn them into
+random stone shapes or claim SC2 gameplay equivalence.
+
+Placement keeps source XZ and quarter-turn yaw, resnaps to the final solid terrain, handles aquatic
+props at the water surface/bottom, protects cliffs and ramp anchors, and leaves air under canopies.
+Small ground cover follows local heights. Native templates have fixed block dimensions and sparse
+block lists, so placing a tree does not erase nearby foliage/water. The receipt's `objectStructures`
+records selected styles, type mapping, placements and skip reasons. Verify actual logs/leaves,
+three-block vision bushes, source water columns and retained ramp heights in the saved world.
+Render a tree closeup and the complete native world; distinguish static substitutes from mobs.
 
 ## Existing surface voxels
 
