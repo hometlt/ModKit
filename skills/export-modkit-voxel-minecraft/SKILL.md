@@ -132,9 +132,13 @@ are applied to block centres; stair facing rotates too. Native world zero is Y=6
 vertical step/reference are reused from the terrain overlay's walkable-level inference.
 Non-unit/tilted/arbitrary-angle placements or a missing inferred cliff step refuse rather than guess.
 The conversion receipt retains the source frame, per-instance placements and material overlap count.
-Join original model silhouettes per datum, then normalize their width once after placement;
-thinning already expanded module caps again can erase ramp tips. Preserve low endpoints and
-source step heights when extruding the two-block strip. Small enclosed contour-noise holes up to
+Join original flat-wall silhouettes per datum, then normalize their width once after placement;
+thinning already expanded module caps again can erase ramp tips. Ramp variants with at least three
+upper-section heights use straight two-block profiles oriented by the source slope, with the full
+rise quantized to half-block steps. Place these final profiles without another thinning pass.
+Their rim tops run from 0.5 above the low plateau to 0.5 above the high plateau; whole-height tops
+use solid granite, half-height tops use bottom slabs, keeping the wall connected. Verify physical
+top heights in saved native blocks, not just the integer Y coordinates of slabs. Small enclosed contour-noise holes up to
 16 raster cells are discarded before thinning; larger plateau interiors remain open. Check bends
 and straight runs for broad pockets, and render ramp sidewalls close enough to verify their low
 tips and joins with both plateau levels in the saved native world.
