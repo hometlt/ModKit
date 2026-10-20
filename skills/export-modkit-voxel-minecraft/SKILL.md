@@ -99,6 +99,31 @@ cliff family, not a universal SC2 label. The Minecraft extension must actually a
 encoder. It selects unique placed types and writes one native Java 1.21.1 structure NBT per variant,
 plus one gallery representative per shape and a detached Anvil preview world.
 
+For natural rock, or several families in one world, replace `typePrefix` with an explicit `families`
+array, for example:
+
+```json
+{ "families": [
+  { "typePrefix": "CompoundFacilityCliff1:CliffMade20:", "style": "masonry" },
+  { "typePrefix": "ShakurasCliff0:CliffNatural0:", "style": "natural" }
+] }
+```
+
+Use a single family for each separate library; use both with `layout: "map", region: "all"` for a
+full cliff-only Amphion world. Prefixes are source data and must not overlap. Do not pass both
+`typePrefix` and `families`. Natural shells retain irregular source heights, use deepslate,
+cobbled deepslate and basalt, and have no masonry niches, cornice or ornamental lip. Their lower
+rock base is synthetic; source textures and overhangs are approximated. They share the explicit
+cell scale, rise and two-block wall policy, but are not straightened like masonry ramp sides.
+Record these losses and visually check natural and artificial gallery previews separately.
+Mixed maps retain each style through the join pass; masonry wins an overlapping solid column,
+and explicit ramp profiles replace conflicting shell columns through their upper rise.
+
+The native conversion receipt lists `regionFiles`. Extract every listed region through the
+container operation: a full 528×528 frame can cross region boundaries; populated cliff columns
+may occupy fewer regions when its outer margins are empty. Do not assume only `r.0.0.mca`.
+Verify region/chunk counts, both families and the full source bounds before rendering.
+
 This is a stylized side-wall conversion with an explicit zero datum. The upper two model units
 become cliffBlocks above zero; basementBlocks (default 5, range 1..16) adds a synthetic stone base
 below zero. With 5 + 5 the plateau is at local Y=10; a bottom granite slab at Y=10 raises the rim by 0.5. NBT height is 11 cells and zeroLevelY is local Y=5. Place it five blocks
