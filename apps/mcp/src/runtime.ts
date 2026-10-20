@@ -4,6 +4,7 @@
  * Host/provider ports own semantics, formats and write authority; handles retain leases until
  * close/disposal. Actual commit/replay receipts are recorded before saved-model refresh, and
  * refresh failure becomes a warning without losing the completed write or Undo/Redo authority.
+ * World GLB selection/conversion delegates to UI media export; MCP retains bounded complete bytes.
  */
 import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
@@ -35,6 +36,7 @@ import type {
   SubjectSelectorSource,
 } from '@modkit/sdk'
 import { relationGraphNeighbourhood, type RelationGraphScan } from '@modkit/sdk'
+import { builtInMediaEncoders, MediaExportError, renderWorldMedia } from '@modkit/ui/media-export'
 import {
   MAP_LAYER_READ_OPERATION,
   WORLD_SCENE_SOURCE_CONTRACT,
@@ -284,6 +286,9 @@ export type WorldSceneQuery =
       readonly fps: number
     })
   | { readonly view: 'export' }
+  | { readonly view: 'glb-options' }
+  | { readonly view: 'glb'; readonly content: 'all' | 'terrain'; readonly includeWater: boolean;
+      readonly textureSize: number }
   | {
       readonly view: 'page'
       readonly facet: 'layers' | 'objects' | 'regions' | 'terrain' | 'cliffs' | 'navigation' | 'traversal' | 'gateways'
@@ -1448,6 +1453,56 @@ export class ModkitMcpRuntime {
             provenance,
             data: info,
           })
+        }
+        if (query.view === 'glb-options') {
+          const info = await source.info(scopedSignal)
+          return envelope({
+            snapshotId: info.snapshotId,
+            completeness: info.complete ? 'complete' : 'partial',
+            provenance: info.provenance,
+            data: {
+              format: 'glb', available: this.host.outputArtifacts === true,
+              requiresOutputArtifacts: true, delivery: 'retained-resource',
+              defaults: { content: 'all', includeWater: true, textureSize: 2048 },
+              content: ['all', 'terrain'],
+              textureSize: { minimum: 16, maximum: 4096 },
+              maxBytes: OUTPUT_ARTIFACT_POLICY.maxArtifactBytes,
+              presets: [
+                { id: 'terrain', content: 'terrain', includeWater: false },
+                { id: 'terrain-water', content: 'terrain', includeWater: true },
+                { id: 'all', content: 'all', includeWater: true },
+              ],
+            },
+          })
+        }
+        if (query.view === 'glb') {
+          // The CLI's media owner performs selection, model acquisition and GLB conversion.
+          const reservation = this.outputs.reserve(entry.id)
+          try {
+            const result = await renderWorldMedia(source, {
+              schemaVersion: 1, format: 'glb', width: query.textureSize, height: query.textureSize,
+              content: query.content, includeWater: query.includeWater,
+            }, builtInMediaEncoders(), {
+              maxBytes: OUTPUT_ARTIFACT_POLICY.maxArtifactBytes, signal: scopedSignal,
+            })
+            const info = await source.info(scopedSignal)
+            scopedSignal.throwIfAborted()
+            const outputArtifact = this.outputs.commit(reservation, result.bytes, {
+              sourceRevision: String(descriptor.revision), operationId: 'modkit.export_glb',
+            })
+            return envelope({
+              snapshotId: info.snapshotId,
+              completeness: result.receipt.complete ? 'complete' : 'partial',
+              provenance: info.provenance,
+              diagnostics: result.diagnostics,
+              data: { outputArtifact, receipt: result.receipt },
+            })
+          } catch (error) {
+            if (error instanceof MediaExportError) throw new McpOperationError(error.code, error.message)
+            throw error
+          } finally {
+            this.outputs.cancel(reservation)
+          }
         }
         if (query.view === 'image') {
           // The world viewer's own collector and plan; models stay placeholders from above.

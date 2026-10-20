@@ -1,0 +1,4 @@
+interface:
+  display_name: "Modkit GLB Export"
+  short_description: "Export game maps and UVW/UVP worlds to GLB"
+  default_prompt: "Use $export-modkit-world-glb to export the selected map or UVW/UVP world to GLB and save the verified file."

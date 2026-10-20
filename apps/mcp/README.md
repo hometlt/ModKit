@@ -113,6 +113,15 @@ they never make a partial workspace complete.
   image block of `width` × `height` from the viewer's orbit camera (`azimuth`, `elevation` in
   radians, `zoom`, `target` offset from the world centre). `export` writes the world as one UVW
   document, a retained output resource, with what the UVW leaves out.
+- `modkit.glb_export_options` reads the available GLB presets, defaults and retained-output limit
+  for an open world without acquiring its models. `modkit.export_glb` uses the CLI's shared
+  `renderWorldMedia` → `worldGlb` route: `content: "terrain" | "all"` (terrain includes cliffs and
+  ramps), independent `includeWater`, and `textureSize` 16–4096 (default 2048). Defaults retain all
+  objects and water. Enable `--output-artifacts`; the result has a conversion receipt and
+  `outputArtifact` with byte count, SHA-256 and chunk resource URIs. Download before releasing
+  the artifact or closing the subject. This writes no source files and does not imply native-game
+  fidelity or authoritative UVW preservation. A result exceeding the advertised retained-output
+  budget is refused; it is not silently truncated.
 - `modkit.invoke_readonly` invokes an exact operation ID only when the current descriptor marks it
   available and `mutatesSource: false`. A byte output whose signature is an image (PNG, JPEG, GIF,
   WebP, at most 4 MiB) also comes back as an MCP image block. `render: "image"` draws a

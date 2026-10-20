@@ -481,6 +481,15 @@ const worldSceneInput = z.discriminatedUnion('view', [
     .strict(),
 ])
 
+const glbExportInput = z.object({
+  handle: handleSchema,
+  content: z.enum(['all', 'terrain']).default('all')
+    .describe('terrain keeps ground, cliffs and ramps; all also includes placed objects.'),
+  includeWater: z.boolean().default(true).describe('Include water surfaces independently of content.'),
+  textureSize: z.number().int().min(16).max(4096).default(2048)
+    .describe('Edge of the baked ground texture; cliff textures retain their material profile.'),
+}).strict()
+
 const factsInput = z.discriminatedUnion('view', [
   z.object({ handle: handleSchema, view: z.literal('summary') }).strict(),
   z
@@ -1044,6 +1053,30 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     },
     ({ handle, ...query }, context) =>
       safeTool(() => runtime.worldScene(handle, query as WorldSceneQuery, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.glb_export_options',
+    {
+      title: 'Inspect GLB export options',
+      description: 'Check whether an open world can export a retained GLB and read composition presets, defaults and byte limits. Does not acquire models or convert the world.',
+      inputSchema: z.object({ handle: handleSchema }).strict(),
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ handle }, context) => safeTool(() =>
+      runtime.worldScene(handle, { view: 'glb-options' }, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.export_glb',
+    {
+      title: 'Export a world as GLB',
+      description: 'Convert an open native map, UVW or UVP world through the same media/GLB owner as the CLI. Select terrain with cliffs/ramps or all objects, and water independently. Requires output-artifacts. Returns data.outputArtifact with retrievable complete bytes and SHA-256, plus the conversion receipt; source files are unchanged. Download before releasing the artifact or closing the subject.',
+      inputSchema: glbExportInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ handle, ...query }, context) => safeTool(() =>
+      runtime.worldScene(handle, { view: 'glb', ...query }, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.invoke_readonly',

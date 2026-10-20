@@ -1170,6 +1170,8 @@ describe('MCP v2 adapter', () => {
       'modkit.relation_graph',
       'modkit.subject_calculations',
       'modkit.world_scene',
+      'modkit.glb_export_options',
+      'modkit.export_glb',
       'modkit.invoke_readonly',
       'modkit.subject_edit_target',
       'modkit.subject_isolation',
