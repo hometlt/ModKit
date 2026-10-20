@@ -101,11 +101,11 @@ plus one gallery representative per shape and a detached Anvil preview world.
 
 This is a stylized side-wall conversion with an explicit zero datum. The upper two model units
 become cliffBlocks above zero; basementBlocks (default 5, range 1..16) adds a synthetic stone base
-below zero. With 5 + 5 the NBT is ten blocks high and zeroLevelY is local Y=5. Place it five blocks
+below zero. With 5 + 5 the plateau is at local Y=10; a bottom granite slab at Y=10 raises the rim by 0.5. NBT height is 11 cells and zeroLevelY is local Y=5. Place it five blocks
 below the intended ground datum; library.json records placementOffsetY=-5.
-At zero a relief granite stair cornice begins the upper profile, followed by diorite and a granite
-rim. Below zero, small blind stone niches in alternating rows retain solid backing and projecting
-andesite posts. There are no windows or enclosed chambers. Two-block side shells leave broad
+At zero a relief granite stair cornice begins the upper profile, followed by diorite and a half-block granite
+rim above the plateau. Below zero, small blind stone niches in alternating rows retain solid backing and projecting
+andesite posts. There are no windows or enclosed chambers. Two-block wall strips follow pinned source centrelines and leave
 plateau interiors empty; horizontal ramp floors are omitted. Preserve these styling/geometry losses.
 
 Save and verify the retained ZIP before releasing it. Extract README.md, library.json and
@@ -132,6 +132,7 @@ are applied to block centres; stair facing rotates too. Native world zero is Y=6
 vertical step/reference are reused from the terrain overlay's walkable-level inference.
 Non-unit/tilted/arbitrary-angle placements or a missing inferred cliff step refuse rather than guess.
 The conversion receipt retains the source frame, per-instance placements and material overlap count.
+Joined strips are normalized per datum after placement so straight runs stay two blocks wide.
 Solid blocks win over module air; differing overlapping solids keep the first state and are counted.
 Inspect such joints in the actual saved-world render; a placed-module preview is not seam acceptance.
 Download, verify, extract and reopen/render this direct world ZIP using the native-world workflow above.
