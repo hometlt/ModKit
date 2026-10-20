@@ -44,6 +44,11 @@ In the verified Amphion UVP, artificial cliffs publish type IDs beginning
 with variants). Select that family for an isolated artificial-cliff view. Natural cliffs belong to
 other published families and are not part of this selection.
 
+The verified natural-cliff family is `ShakurasCliff0:CliffNatural0:`: 485 placements, 64 resources.
+Select instances also marked `derivedFrom: "cliffs"`. MCP renders use the shared scene-export
+texture budget: the interactive viewer's smaller budget can refuse a 1024×1024 source texture
+before it can be reduced. Even a reported converted model count does not prove visible pixels.
+
 Ramp rails/walls are model pieces; the walkable ramp surface is terrain. In this specific Amphion
 family, inspected shape names such as `QBRQ`, `QQBR`, `QQRB`, `QRBB`, `QRBQ`, `QRCB`, `RBQQ`,
 `RQQB`, `RRCS`, `SCRR` and `SRRC` identify ramp-related pieces. Confirm the actual catalog and

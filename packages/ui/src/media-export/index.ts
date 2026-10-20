@@ -242,11 +242,11 @@ function mediaWorldInput(
 }
 
 /**
- * Model budgets of a scene export: a glTF keeps every texture a model draws with, where a picture of
- * the world shares a small preview budget (a model with many textures then loses its last ones to it).
+ * Model budgets shared by scene exports and MCP renders. The interactive viewer keeps a smaller
+ * preview budget, which can omit source textures that must be decoded before they can shrink.
  * Larger shares stop the world from batching its static models; this one keeps the batches.
  */
-const SCENE_MODEL_BUDGET = Object.freeze({
+export const SCENE_MODEL_BUDGET = Object.freeze({
   maxModelBytes: 4 * 1024 * 1024 * 1024,
   bytesPerModel: 12 * 1024 * 1024,
   textureBytesPerModel: 8 * 1024 * 1024,

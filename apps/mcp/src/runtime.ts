@@ -36,7 +36,7 @@ import type {
   SubjectSelectorSource,
 } from '@modkit/sdk'
 import { relationGraphNeighbourhood, type RelationGraphScan } from '@modkit/sdk'
-import { builtInMediaEncoders, MediaExportError, renderWorldMedia } from '@modkit/ui/media-export'
+import { builtInMediaEncoders, MediaExportError, renderWorldMedia, SCENE_MODEL_BUDGET } from '@modkit/ui/media-export'
 import { processModelScene, type ModelProcessingRequest } from '@modkit/ui/model-processing'
 import {
   MAP_LAYER_READ_OPERATION,
@@ -1708,6 +1708,8 @@ export class ModkitMcpRuntime {
                 new Set([...selectedResources].filter(id => activeResources.has(id)))
             }
             const model = await inspectCandidateWorld(source, {
+              // Decode source textures at the scene-export budget before the owner reduces them.
+              ...SCENE_MODEL_BUDGET,
               maxLayers: WORLD_VIEWER_MAX_LAYERS,
               maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
               maxPageItems: MCP_MAX_WORLD_PAGE_ITEMS,
