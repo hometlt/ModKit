@@ -79,7 +79,7 @@ and `preview-world.zip` through MCP. Reopen and render the native gallery, inspe
 matching table and samples, then export the terrain with `objectMode: "structures"`.
 
 Both targets share the same semantic plan and block structures. Living trees use logs/persistent
-leaves, grouped trees use groves, sight blockers use three-block leaf bushes, RockMix is a low
+leaves, grouped trees use groves, sight blockers use eight-block dense bamboo, RockMix is a low
 pebble layer, large rocks are boulders, resources use crystal/gas structures, and fences/ruins/
 crates/lamps use their Minecraft counterparts. Source names are data, not a promise that every
 arbitrary model has a meaningful substitute. Keep skipped helper/shoreline/decal/effect types
@@ -91,8 +91,17 @@ props at the water surface/bottom, protects cliffs and ramp anchors, and leaves 
 Small ground cover follows local heights. Native templates have fixed block dimensions and sparse
 block lists, so placing a tree does not erase nearby foliage/water. The receipt's `objectStructures`
 records selected styles, type mapping, placements and skip reasons. Verify actual logs/leaves,
-three-block vision bushes, source water columns and retained ramp heights in the saved world.
+eight-block vision vegetation, source water columns and retained ramp heights in the saved world.
 Render a tree closeup and the complete native world; distinguish static substitutes from mobs.
+For the user's StarMine resources, pass `resourceProfile: "starmine"` with `objectMode: "structures"`.
+The native world then requires StarMine: mineral_crystal uses one core and 3×3×3 cells, including
+Amount/Size/Rich NBT; vespene uses a cobblestone mound, outlet and five-block-deep fixed reservoir
+with absolute Channel/Outlets on its root. Verify the actual custom blocks and owning-chunk entities.
+This is a compact structure, not StarMine's randomized full-depth vein generator. Detached geyser
+NBT templates leave their root uninitialized because Minecraft does not shift packed absolute
+channel positions on template placement; only the generated native worlds have initialized veins.
+Modkit's ordinary asset renderer does not execute StarMine's dynamic mineral block-entity renderer;
+a native block/entity check does not establish its in-game appearance or harvesting behavior.
 
 ## Existing surface voxels
 
