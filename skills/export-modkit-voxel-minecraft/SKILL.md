@@ -27,6 +27,25 @@ unit. In SC2, five blocks per placement unit gives a 3×3 barracks footprint of 
 `cliffBlocks` is the rise per inferred cliff level; it does not flatten decorative cliff geometry.
 Download, verify, extract and reopen the native world using steps 3–5 below.
 
+For a separate terrain layer, pass `includeCliffs: false` and `materialMode: "texture-types"`
+to the same native target. Explicitly choose `region: "all"` for the full map, and keep the
+user's scale/rise (the accepted Amphion example uses `blocksPerUnit: 3, cliffBlocks: 5`).
+This mode uses terrain texture names and green/olive colour classification: sand becomes sand,
+vegetation becomes grass blocks over three layers of dirt, soil textures become dirt; other
+surfaces retain colour-matched block tops over dirt. Authored water zones remain as a seabed
+mask and paint clay at the top plus three layers below; the export contains no liquid water.
+It excludes cliff models, scene objects, ornamental rims and sight-blocker decoration, while
+retaining the existing half-block terrain ramps. Vanilla colour-matched slabs approximate
+materials without native slabs, including grass and sand. The vertical reference reuses the
+lowest inferred playable cliff level at Minecraft Y=64, matching the separate cliff-world frame.
+The receipt records `materialMapping`, `includeCliffs`, `waterBedColumns` and `sourceFrame`.
+Inspect this mapping before acceptance; green terrain must not silently become moss.
+
+A fully filled 528×528 terrain has 1089 saved chunks. When the wide native view contains
+exactly those chunks, render it without an explicit `resourceIds` array (that array is limited
+to 1024); verify `converted/total` against all 1089. Otherwise render verified subsets and report
+their coverage. Extract every `regionFiles` entry before reopening the saved world.
+
 ## Existing surface voxels
 
 Use `voxelize-modkit-model` first when the selected map has not been voxelized. Preserve its crop,
