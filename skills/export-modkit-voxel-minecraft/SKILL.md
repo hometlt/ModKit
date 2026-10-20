@@ -79,3 +79,38 @@ Report the ZIP, native world folder, rendered image, blocks/chunks, target versi
 losses. Modkit reopen/render is separate from acceptance in a running Minecraft client; do not
 claim the latter unless it was actually performed. Do not install into the user's saves or launch
 their game unless requested.
+
+## Detached cliff structure library
+
+For a library of vertical wall modules outside the map, open the packaged UVP and call
+`map.export-native` with retained output:
+
+```json
+{ "handle": "…", "operationId": "map.export-native", "input": {
+  "schemaVersion": 1, "formatId": "minecraft-java-cliff-library",
+  "options": { "name": "amphion-cliffs-3x5",
+    "typePrefix": "CompoundFacilityCliff1:CliffMade20:",
+    "blocksPerUnit": 3, "cliffBlocks": 5 }
+}, "retainOutput": true }
+```
+
+Discover the selected map's derived cliff type IDs first; the prefix above is Amphion's artificial
+cliff family, not a universal SC2 label. The Minecraft extension must actually advertise this
+encoder. It selects unique placed types and writes one native Java 1.21.1 structure NBT per variant,
+plus one gallery representative per shape and a detached Anvil preview world.
+
+This is a stylized masonry conversion: the upper two model units become one requested rise;
+buried skirts and horizontal ramp floors are omitted. Diorite forms the white upper band, polished
+granite the cap, and stone bricks/andesite the lower wall. Blind exterior recesses keep solid stone
+backing and projecting separator posts; there are no windows or hollow rooms. Outline thickening
+and geometry normalization are recorded in library.json. It is not a colour-matched full-map export.
+
+Save and verify the retained ZIP before releasing it. Extract README.md, library.json and
+preview-world.zip through the container operation. Reopen and render the saved native preview.
+For a sparse gallery, select only chunks actually present in the saved region: a rectangular
+viewer selection also offers empty chunks. Check converted/total against those present chunks,
+then inspect a close view of the masonry as well as the overview.
+
+The outer ZIP contains a datapack folder: unpack that folder into the chosen world's datapacks
+and reload, when installing is requested. The README lists `/place template modkit:cliffs/<id>`
+and the gallery ID. Creating the ZIP does not authorize installing it into an existing save.
