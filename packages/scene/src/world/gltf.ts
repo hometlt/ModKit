@@ -493,8 +493,10 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   const groups = new Map<string, MeshGroup>()
   const joinedGround = joinGroundRims(terrainPrimitives, id => splats.get(id)?.batch.maskTexture !== undefined)
   const groundAnchors = new Set<string>()
+  // A cliff's own textured skin must not pin its underlay into the same plane.
   for (const primitive of terrainPrimitives) {
-    if (isTerrainLayer(primitive.id) || splats.get(primitive.id)?.batch.maskTexture !== undefined) continue
+    if (isTerrainLayer(primitive.id) || primitive.id.startsWith('world/textured-') ||
+      splats.get(primitive.id)?.batch.maskTexture !== undefined) continue
     const positions = (joinedGround.get(primitive.id) ?? placedPrimitive(primitive)).positions
     for (let index = 0; index < positions.length; index += 3) groundAnchors.add(groundSeamKey(positions, index))
   }

@@ -166,4 +166,17 @@ it('keeps visible cliff walls under the rock and pins their shared plateau verti
   assert.deepEqual(Array.from(jp.subarray(3, 9)), [1, .25, 0, 0, 0, 1], 'the ramp rim is pinned to the joined ground')
   assert.deepEqual(Array.from(jp.subarray(9, 18)), [1, .25, 0, 2, .5, 1, 0, 0, 1],
     'rendering offsets close without flattening the ramp or changing unrelated vertices')
+  const skinned = await worldGlb({ ...plan, terrainTexturedBatches: 1, texturedTriangles: [{
+    positions: batch.positions, normals: batch.normals, colors: batch.colors,
+    textureCoordinates: batch.textureCoordinates[0], texture: batch.textures[0], alphaCutoff: .5,
+  }] }, { terrainTextureSize: 16, maxBytes: 8 * 1024 * 1024 })
+  const skinLength = new DataView(skinned.bytes.buffer).getUint32(12, true)
+  const skinDoc = JSON.parse(new TextDecoder().decode(skinned.bytes.subarray(20, 20 + skinLength)))
+  const skinMesh = skinDoc.meshes.find(mesh => mesh.name === 'world/terrain-baked')
+  const skinAccessor = skinDoc.accessors[skinMesh.primitives[0].attributes.POSITION]
+  const skinView = skinDoc.bufferViews[skinAccessor.bufferView]
+  const sp = new Float32Array(skinned.bytes.buffer, skinned.bytes.byteOffset + 28 + skinLength + skinView.byteOffset,
+    skinAccessor.count * 3)
+  assert.ok(Math.abs(sp[1] + .001) < 1e-7, 'a textured cliff skin does not pin its ground copy into the same plane')
+  assert.deepEqual(Array.from(sp.subarray(3, 6)), [2, 0, 0], 'the real shared plateau rim remains pinned')
 })
