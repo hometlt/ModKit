@@ -14,6 +14,8 @@
  * GPU skin palettes are baked with the shared material-skin owner before CPU primitive copies.
  * Camera-facing particles and ribbons reuse the world's effect draws and prepared material programs.
  * Wave normals, caustics and shadows remain GPU-only.
+ * Objects-only inspection hides terrain and water after scene preparation, preserving cliff offsets
+ * and the map camera frame. Offscreen render textures still see their ordinary complete scene.
  */
 import type { WorldVisibilityBounds } from './world-visibility.js'
 import type {
@@ -516,6 +518,8 @@ export function worldHeadlessScene(plan: WorldWebGlPlan, camera?: WorldWebGlCame
 }
 
 export interface WorldHeadlessOptions {
+  /** Objects-only hides ground and water after placement/deformation, retaining the map frame. */
+  readonly content?: 'all' | 'objects'
   /** 2x per axis spatial supersampling, averaged through the existing raster resampler. */
   readonly supersample?: 1 | 2
   readonly visibilityBounds?: WorldVisibilityBounds
@@ -547,7 +551,9 @@ export async function renderWorldHeadless(
   const colorLut = colorization === undefined ? undefined : createWorldColorLut(colorization)
   const rendered = await renderHeadless(
     {
-      scene,
+      scene: options.content === 'objects' ? { ...scene,
+        primitives: scene.primitives.filter(primitive => !terrain.has(primitive.id) && !water.has(primitive.id)),
+      } : scene,
       camera: frame,
       viewport: { width: options.width, height: options.height },
       outputKind: 'rgba8',
@@ -612,7 +618,7 @@ export async function renderWorldHeadlessFrame(
     options.signal?.throwIfAborted()
     // Secondary views never see an in-progress target or previous-frame feedback.
     const rendered = await renderWorldHeadless(createWorldWebGlPlan({ ...frame.secondaryInput, camera: view.camera }), {
-      ...options, width: view.width, height: view.height, camera: view.camera, clearColor: view.clearColor,
+      ...options, content: 'all', width: view.width, height: view.height, camera: view.camera, clearColor: view.clearColor,
     })
     diagnostics.push(...rendered.diagnostics)
     targets.set(view.id, { id: view.id, width: view.width, height: view.height, rgba: rendered.rgba, filter: 'linear' })

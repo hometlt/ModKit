@@ -138,3 +138,18 @@ it('requires output authority for a retained world render', async () => {
     expect((result.structuredContent as McpEnvelope).diagnostics[0]?.code).toBe('x3.mcp/output-artifacts-disabled')
   } finally { await app.close() }
 }, 60000)
+
+it('exposes map-element isolation through the existing world render and refuses unknown content', async () => {
+  const app = await connected(true)
+  try {
+    const result = await app.client.callTool({name:'modkit.world_scene',arguments:{
+      handle:app.handle,view:'render',content:'objects',width:64,height:48,
+    }})
+    expect(data(result)).toMatchObject({content:'objects',width:64,height:48})
+    expect(result.content.some(item=>item.type==='image')).toBe(true)
+    const refused=await app.client.callTool({name:'modkit.world_scene',arguments:{
+      handle:app.handle,view:'render',content:'ramps',width:64,height:48,
+    }})
+    expect(refused.isError).toBe(true)
+  } finally {await app.close()}
+},60000)

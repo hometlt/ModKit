@@ -262,6 +262,8 @@ export type CalculationsQuery =
   | { readonly view: 'calculations'; readonly cursor?: string; readonly limit: number }
 
 interface WorldRenderOptions {
+  /** Hide ground/water only after preparing placed models, so cliff attachment remains correct. */
+  readonly content?: 'all' | 'objects'
   readonly retainOutput?: boolean
   readonly supersample?: 1 | 2
   /** Render-only visible rectangle in the renderer's X/Z frame; never culls whole objects. */
@@ -1779,6 +1781,7 @@ export class ModkitMcpRuntime {
                     target: query.target ?? DEFAULT_WORLD_WEBGL_CAMERA.target,
                   }
               const frame = await renderWorldHeadlessFrame({ ...input, camera }, {
+                ...(query.content === undefined ? {} : { content: query.content }),
                 ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
                 width: query.width,
                 height: query.height,
@@ -1859,6 +1862,7 @@ export class ModkitMcpRuntime {
                 height: frame.height,
                 camera,
                 ...(outputArtifact === undefined ? {} : { outputArtifact, format: 'png', mediaType: 'image/png' }),
+                ...(query.content === undefined ? {} : { content: query.content }),
                 ...(sampled === undefined ? {} : { timeMs: sampled.timeMs }),
                 models: { total: models.total, converted: models.converted },
                 ...(bounds === undefined ? {} : { visibilityBounds: bounds }),

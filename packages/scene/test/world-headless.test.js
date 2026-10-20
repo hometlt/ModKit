@@ -147,6 +147,25 @@ it('renders a world plan without a GPU: its ground and its models as the plan pl
   assert.ok(Math.abs(redX / red - 32) < 6, `the model drawn around x ${redX / red}`)
 })
 
+it('isolates objects after preparing the world, preserving placement and the default render', async () => {
+  const plan = createWorldWebGlPlan({ items: [...terrain, object], models: new Map([['post', model]]) })
+  const options = { width: 64, height: 48 }
+  const full = await renderWorldHeadless(plan, options)
+  const isolated = await renderWorldHeadless(plan, { ...options, content: 'objects' })
+  let red = 0, removed = 0
+  for (let i = 0; i < full.rgba.length; i += 4) {
+    if (full.rgba[i] > 150 && full.rgba[i+1] < 60 && full.rgba[i+2] < 60) {
+      assert.deepEqual(isolated.rgba.subarray(i,i+4),full.rgba.subarray(i,i+4))
+      red++
+    } else if (full.rgba[i]+full.rgba[i+1]+full.rgba[i+2] > 0) {
+      assert.deepEqual([...isolated.rgba.subarray(i,i+4)],[0,0,0,255])
+      removed++
+    }
+  }
+  assert.ok(red > 0 && removed > 0)
+  assert.deepEqual((await renderWorldHeadless(plan,options)).rgba,full.rgba)
+})
+
 it('paints receiver-coincident terrain decals without hiding models or changing ground depth', async () => {
   const width=64,height=48
   const plan = createWorldWebGlPlan({items: [...terrain, object],models:new Map([['post',model]])})

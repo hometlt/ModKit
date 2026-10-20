@@ -1,0 +1,4 @@
+interface:
+  display_name: "Render map elements"
+  short_description: "Render placed cliffs and ramp pieces through Modkit MCP"
+  default_prompt: "Use the render-modkit-map-elements skill to render selected placed map elements through Modkit MCP."

@@ -126,6 +126,11 @@ they never make a partial workspace complete.
   image block of `width` × `height` from the viewer's orbit camera (`azimuth`, `elevation` in
   radians, `zoom`, `target` offset from the world centre). `export` writes the world as one UVW
   document, a retained output resource, with what the UVW leaves out.
+  For isolated placed map elements use `render` with `content: "objects"` and the published
+  `resourceIds` (up to 1024). Ground, terrain overlays and water are hidden after preparing model
+  placement and cliff deformation; the map frame remains unchanged. All placements sharing a
+  selected resource are drawn. This selects ramp wall/rail models, not the terrain ramp surface.
+  See `skills/render-modkit-map-elements` for the SC2/Amphion workflow and resource lifecycle.
 - `modkit.glb_export_options` reads the available GLB presets, defaults and retained-output limit
   for an open world without acquiring its models. `modkit.export_glb` uses the CLI's shared
   `renderWorldMedia` → `worldGlb` route: `content: "terrain" | "all"` (terrain includes cliffs and

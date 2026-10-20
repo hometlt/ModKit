@@ -452,6 +452,7 @@ const worldSceneInput = z.discriminatedUnion('view', [
     .object({
       handle: handleSchema,
       view: z.literal('render'),
+      content: z.enum(['all', 'objects']).optional().describe('Objects hides ground and water after model placement; combine with resourceIds to isolate map elements such as cliffs or ramp rails.'),
       visibilityBounds: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).describe('Render-only visible [minX,minZ,maxX,maxZ] rectangle in the current renderer frame; outside is opaque black, geometry is retained.').optional(),
       resourceIds: z.array(z.string().min(1).max(512)).min(1).max(1024).optional(),
       timeMs: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
