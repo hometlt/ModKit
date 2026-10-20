@@ -125,10 +125,15 @@ export interface MediaExportRequest {
    * `gateways`).
    */
   readonly overlays?: readonly ('regions' | 'navigation' | 'gateways')[]
+  /** Ground, cliffs and ramps only, or also all placed objects. Default: `all`. */
+  readonly content?: 'all' | 'terrain'
+  /** Include water surfaces independently of `content`. Default: true. */
+  readonly includeWater?: boolean
   /**
    * Only the placed objects derived from these sources, as the world source marks them
    * (`WorldSceneObjectItem.derivedFrom`: `cliffs` are a map's cliff and ramp pieces); the ground and
-   * water stay. Every object when absent. The others are not drawn and their models not read.
+   * water follow `content`/`includeWater`. Every object when absent and `content` is `all`.
+   * Combined with `content: 'terrain'` by intersection. Excluded objects' models are not read.
    */
   readonly derivedFrom?: readonly string[]
   readonly quality?: number
@@ -153,6 +158,9 @@ export interface MediaSpriteSheetLayout {
 
 export interface MediaExportReceipt {
   readonly format: string
+  /** Effective composition of the exported world; absent in older receipts. */
+  readonly content?: 'all' | 'terrain'
+  readonly includeWater?: boolean
   readonly mediaType: string
   readonly extension: string
   readonly width: number

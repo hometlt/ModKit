@@ -17,6 +17,8 @@
  * drawn and held before encoding (the host encoder's own window); one sheet is at most
  * `maxSheetEdge` pixels a side. Every frame is drawn from the same inspected world, so models and
  * textures are acquired once per export.
+ * Composition is selected before model acquisition: terrain keeps cliff/ramp presentation pieces,
+ * all keeps placed objects too. Water is independent; the same selection applies to sampled frames.
  *
  * Limits of this profile: no audio (clip sound events are only counted, `MediaTimelineReport`),
  * no blending between named clips, the CPU renderer's lighting (no shadows or tone mapping, as MCP
@@ -206,7 +208,7 @@ async function inspect(
   world: CandidateWorldSceneSource,
   signal?: AbortSignal,
   budget: Readonly<{ maxModelBytes: number; bytesPerModel: number; textureBytesPerModel: number }> | undefined = undefined,
-  derivedFrom: readonly string[] | undefined = undefined,
+  request?: MediaExportRequest,
 ) {
   // a map preview first shows its world before the catalog answers; an export draws the answered one
   if (world.refined !== undefined) await world.refined(signal)
@@ -215,11 +217,28 @@ async function inspect(
     maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
     maxPageItems: MEDIA_EXPORT_LIMITS.maxPageItems,
     ...(budget === undefined ? {} : budget),
-    ...(derivedFrom === undefined
+    ...(request?.content !== 'terrain' && request?.derivedFrom === undefined
       ? {}
-      : { objectFilter: (item: WorldSceneObjectItem) => derivedFrom.includes(item.derivedFrom ?? '') }),
+      : { objectFilter: (item: WorldSceneObjectItem) => keepsMediaObject(item, request!) }),
     ...(signal === undefined ? {} : { signal }),
   })
+}
+
+/** Cliff/ramp presentation pieces belong to terrain; legacy source filters further narrow it. */
+function keepsMediaObject(item: WorldSceneObjectItem, request: MediaExportRequest): boolean {
+  return (request.content !== 'terrain' || item.derivedFrom === 'cliffs') &&
+    (request.derivedFrom === undefined || request.derivedFrom.includes(item.derivedFrom ?? ''))
+}
+
+/** Apply composition to static and sampled items through the viewer's existing world input. */
+function mediaWorldInput(
+  model: CandidateWorldViewerModel, request: MediaExportRequest,
+  hidden: ReadonlySet<WorldOverlayFacet>, frame?: WorldSceneFrame,
+): WorldWebGlInput {
+  const base = candidateWorldWebGlInput(model, hidden, frame)
+  return { ...base, items: base.items.filter(item =>
+    (request.includeWater !== false || item.facet !== 'water') &&
+    (item.facet !== 'objects' || keepsMediaObject(item, request))) }
 }
 
 /**
@@ -597,6 +616,10 @@ export async function renderWorldMedia(
   options: WorldMediaOptions = {},
 ): Promise<WorldMediaResult> {
   if (request.schemaVersion !== 1) refuse('invalid-request', 'schemaVersion must be 1')
+  if (request.content !== undefined && request.content !== 'all' && request.content !== 'terrain')
+    refuse('invalid-request', 'content must be all or terrain')
+  if (request.includeWater !== undefined && typeof request.includeWater !== 'boolean')
+    refuse('invalid-request', 'includeWater must be a boolean')
   const encoder = encoders.find(item => item.offer.id === request.format)
   if (encoder === undefined)
     refuse(
@@ -608,7 +631,7 @@ export async function renderWorldMedia(
   const fps = checkRequest(request, offer)
   const signal = options.signal
   const maxBytes = options.maxBytes ?? 64 * 1024 * 1024
-  const model = await inspect(world, signal, undefined, request.derivedFrom)
+  const model = await inspect(world, signal, undefined, request)
   const { byObject, unmatched } = chosenItems(model, request.animations ?? [])
   const still = offer.kind === 'still'
   const startMs = request.startMs ?? 0
@@ -668,7 +691,7 @@ export async function renderWorldMedia(
       if (!sampled.complete) complete = false
       record(sampled.diagnostics)
     }
-    const base = candidateWorldWebGlInput(model, hidden, sampled)
+    const base = mediaWorldInput(model, request, hidden, sampled)
     const input = withChoices(
       sampled === undefined ? { ...base, timeSeconds: at / 1000 } : base,
       byObject,
@@ -745,6 +768,8 @@ export async function renderWorldMedia(
     diagnostics: Object.freeze(diagnostics),
     receipt: Object.freeze({
       format: offer.id,
+      content: request.content ?? 'all',
+      includeWater: request.includeWater ?? true,
       mediaType: offer.mediaType,
       extension: offer.extension,
       width: request.width,
@@ -781,9 +806,9 @@ async function worldScene(
   if (!Number.isSafeInteger(edge) || edge < MEDIA_EXPORT_LIMITS.minEdge || edge > SCENE_TEXTURE_EDGE)
     refuse('invalid-size', `the ground texture edge must be an integer from ${MEDIA_EXPORT_LIMITS.minEdge} to ${SCENE_TEXTURE_EDGE}`)
   const signal = options.signal
-  const model = await inspect(world, signal, SCENE_MODEL_BUDGET, request.derivedFrom)
+  const model = await inspect(world, signal, SCENE_MODEL_BUDGET, request)
   const hidden = new Set(ALL_OVERLAYS.filter(facet => !(request.overlays ?? []).includes(facet)))
-  const base = candidateWorldWebGlInput(model, hidden, undefined)
+  const base = mediaWorldInput(model, request, hidden)
   const plan = createWorldWebGlPlan({ ...base, timeSeconds: (request.startMs ?? 0) / 1000 })
   const written = await worldGlb(plan, {
     terrainTextureSize: edge,
@@ -803,6 +828,8 @@ async function worldScene(
     ]),
     receipt: Object.freeze({
       format: offer.id,
+      content: request.content ?? 'all',
+      includeWater: request.includeWater ?? true,
       mediaType: offer.mediaType,
       extension: offer.extension,
       width: edge,

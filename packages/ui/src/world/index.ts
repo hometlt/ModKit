@@ -392,7 +392,7 @@ export async function inspectCandidateWorld(
   const layerAcquisitionMilliseconds = elapsedInspectionMilliseconds(layerAcquisitionStartedAt)
   // only the objects a caller keeps are drawn and only their models are asked for
   const objectFilter = options.objectFilter
-  const inspected =
+  let inspected =
     objectFilter === undefined
       ? pagedLayers
       : pagedLayers.map(entry =>
@@ -437,6 +437,12 @@ export async function inspectCandidateWorld(
       }
     }
   }
+  // Excluded objects' resources are outside this inspection, including its asset-status receipt.
+  if (objectFilter !== undefined) inspected = inspected.map(entry => Object.freeze({
+    ...entry,
+    page: Object.freeze({ ...entry.page, items: Object.freeze(entry.page.items.filter(item =>
+      !isWorldModelResourceItem(item) || rootResources.has(item.id) || childResources.has(item.id))) }),
+  }))
   const childOnly = (id: string) => childResources.has(id) && !rootResources.has(id)
   const resourceItems = inspected
     .flatMap(item => item.page.items)
