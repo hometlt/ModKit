@@ -132,7 +132,12 @@ are applied to block centres; stair facing rotates too. Native world zero is Y=6
 vertical step/reference are reused from the terrain overlay's walkable-level inference.
 Non-unit/tilted/arbitrary-angle placements or a missing inferred cliff step refuse rather than guess.
 The conversion receipt retains the source frame, per-instance placements and material overlap count.
-Joined strips are normalized per datum after placement. Small enclosed contour-noise holes up to 16 raster cells are discarded before thinning; larger plateau interiors remain open. Check bends as well as straight runs for broad pockets in the saved-world render.
+Join original model silhouettes per datum, then normalize their width once after placement;
+thinning already expanded module caps again can erase ramp tips. Preserve low endpoints and
+source step heights when extruding the two-block strip. Small enclosed contour-noise holes up to
+16 raster cells are discarded before thinning; larger plateau interiors remain open. Check bends
+and straight runs for broad pockets, and render ramp sidewalls close enough to verify their low
+tips and joins with both plateau levels in the saved native world.
 Solid blocks win over module air; differing overlapping solids keep the first state and are counted.
 Inspect such joints in the actual saved-world render; a placed-module preview is not seam acceptance.
 Download, verify, extract and reopen/render this direct world ZIP using the native-world workflow above.
