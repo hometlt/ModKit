@@ -399,3 +399,14 @@ it('keeps clipped cell layers in order and hides distant layers behind foregroun
   const high=layerPixels(await renderWorldHeadless(ridge,{width:128,height:96,camera:camera(.9,true)}))
   assert.ok(high.blue>0&&high.yellow>0,'the distant layers remain visible from above the ridge')
 })
+
+
+it('spatial supersampling retains output dimensions and actually shades four subpixel samples',async()=>{
+  const plan=createWorldWebGlPlan({items:terrain})
+  const base=await renderWorldHeadless(plan,{width:96,height:72})
+  const smooth=await renderWorldHeadless(plan,{width:96,height:72,supersample:2})
+  assert.equal(smooth.width,96);assert.equal(smooth.height,72)
+  assert.equal(smooth.rgba.length,96*72*4)
+  assert.ok(smooth.statistics.fragments>base.statistics.fragments*3)
+  await assert.rejects(()=>renderWorldHeadless(plan,{width:96,height:72,supersample:3}),/supersample/)
+})

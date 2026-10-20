@@ -115,16 +115,16 @@ const RENDERER_ID = 'modkit.headless'
 const DEFAULT_COLOR: Vec4 = Object.freeze([0.78, 0.8, 0.84, 1])
 const DEFAULT_CLEAR_COLOR: Vec4 = Object.freeze([0, 0, 0, 0])
 const MAX_DIMENSION = 4_096
-const MAX_PIXELS = 16_777_216
+const MAX_PIXELS = 67_108_864
 
 const recordOf = <T extends object>(value: T): T | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? value : undefined
 
 const nonEmptyString = (value: unknown) => typeof value === 'string' && value.trim().length > 0
 
-function dimension(value: number, label: string) {
-  if (!Number.isSafeInteger(value) || value <= 0 || value > MAX_DIMENSION) {
-    throw new TypeError(`${label} must be a positive safe integer no greater than ${MAX_DIMENSION}`)
+function dimension(value: number, label: string, maximum = MAX_DIMENSION) {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
+    throw new TypeError(`${label} must be a positive safe integer no greater than ${maximum}`)
   }
   return value
 }
@@ -1221,8 +1221,8 @@ export async function renderHeadless(
   if (camera === undefined || viewport === undefined) {
     throw new TypeError('headless renderer requires camera and viewport objects')
   }
-  const width = dimension(viewport.width, 'viewport width')
-  const height = dimension(viewport.height, 'viewport height')
+  const width = dimension(viewport.width, 'viewport width', 8_192)
+  const height = dimension(viewport.height, 'viewport height', 8_192)
   if (width * height > MAX_PIXELS) {
     throw new TypeError(`headless renderer refuses more than ${MAX_PIXELS} output pixels`)
   }

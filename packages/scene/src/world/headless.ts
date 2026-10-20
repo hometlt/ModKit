@@ -25,6 +25,7 @@ import type {
   SceneRendererTeamColor,
   SceneRendererTexture,
 } from '@modkit/sdk/renderer'
+import { resizeRgba } from '@modkit/codec-kit/raster'
 import { TEAM_COLOR_BLENDS } from '@modkit/codec-kit/model-math/color-remap'
 import { renderHeadless } from '../render/headless.js'
 import { toneMapWorldColor } from './tone-mapping.js'
@@ -515,6 +516,8 @@ export function worldHeadlessScene(plan: WorldWebGlPlan, camera?: WorldWebGlCame
 }
 
 export interface WorldHeadlessOptions {
+  /** 2x per axis spatial supersampling, averaged through the existing raster resampler. */
+  readonly supersample?: 1 | 2
   readonly visibilityBounds?: WorldVisibilityBounds
   readonly width: number
   readonly height: number
@@ -529,6 +532,15 @@ export async function renderWorldHeadless(
   plan: WorldWebGlPlan,
   options: WorldHeadlessOptions,
 ): Promise<SceneRenderFrame> {
+  const supersample = options.supersample ?? 1
+  if (supersample !== 1 && supersample !== 2) throw new RangeError('world supersample must be 1 or 2')
+  if (supersample === 2) {
+    if(options.width * options.height > 16_777_216) throw new RangeError('supersampled world exceeds 64M sample budget')
+    const rendered = await renderWorldHeadless(plan, {...options,width:options.width*2,height:options.height*2,supersample:1})
+    options.signal?.throwIfAborted()
+    const image=resizeRgba({width:rendered.width,height:rendered.height,pixels:rendered.rgba},options.width,options.height)
+    return Object.freeze({...rendered,width:options.width,height:options.height,rgba:image.pixels})
+  }
   const frame = createWorldWebGlCameraFrame(plan, options.width, options.height, options.camera)
   const { scene, diagnostics, splats, water, terrain, materialLighting, programs } = worldHeadlessScene(plan, frame)
   const colorization = plan.light.toneMapping?.colorization

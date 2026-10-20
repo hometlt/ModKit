@@ -1,9 +1,33 @@
 ---
 name: export-modkit-voxel-minecraft
-description: Fill a Modkit surface-voxel model, assign Minecraft blocks by colour, export a native Java world ZIP through MCP and render the reopened world. Use after voxelize-modkit-model; not for arbitrary meshes or an overlay datapack.
+description: Export UVW/UVP terrain with placement-cell scale, cliff levels and slab ramps, or fill an existing surface-voxel model, to a native Minecraft Java world through MCP and render the saved world.
 ---
 
 # Export filled voxels to Minecraft Java
+
+## Authoritative game terrain
+
+When the user specifies placement-cell scale, cliff-level height or ramp step height, start with
+the source UVW/UVP. A coarse voxel GLB has already lost that semantic grid. Open the source through
+MCP and invoke `map.export-native`, retaining the output, for example:
+
+```json
+{ "handle": "…", "operationId": "map.export-native", "input": {
+  "schemaVersion": 1, "formatId": "minecraft-java-terrain-world",
+  "options": { "name": "amphion-sw-5x8", "region": "southwest", "blocksPerUnit": 5, "cliffBlocks": 8 }
+}, "retainOutput": true }
+```
+
+This profile keeps terrain and derived cliff objects, removes water and gameplay objects, reuses
+the existing overlay's level inference, ramp planes, half-block smoothing and colour-matched slabs,
+and writes actual Anvil chunks through the common native writer. Edges retain slabs and cliffs;
+they do not fade into generated land. `region` is `southwest` (min X, max Z) or `all`; scales are
+explicit source-world units, not the low-resolution voxel grid. Verify the source's placement-cell
+unit. In SC2, five blocks per placement unit gives a 3×3 barracks footprint of 15×15 blocks.
+`cliffBlocks` is the rise per inferred cliff level; it does not flatten decorative cliff geometry.
+Download, verify, extract and reopen the native world using steps 3–5 below.
+
+## Existing surface voxels
 
 Use `voxelize-modkit-model` first when the selected map has not been voxelized. Preserve its crop,
 water/object selection and resolution. This writer requires the canonical unit-cube surface with
@@ -41,7 +65,11 @@ water/object selection and resolution. This writer requires the canonical unit-c
    The blocks view currently offers a 17×17 chunk window even when neighboring chunks are absent.
    For a small exported world, page its objects with the declared object layer ID and `limit: 20` (large object records may exceed the bounded projection at 50);
    follow cursors, select the actual saved chunks, then supply their `resourceIds` (or `modelComponents[].resourceId`) to the renderer
-   (up to 256). Check converted count against the receipt, save and visually inspect the PNG.
+   (up to 1024). For a 440×440 quarter select the **wide, 33 x 33 chunks** view; the default
+   17×17 view cannot cover it. A high-quality still can request `width: 4096`, `height: 3072`,
+   `supersample: 2`: Scene renders at twice each dimension and averages four samples per output
+   pixel. The common CPU renderer still has no GPU shadows. Check converted count against the
+   receipt, save and visually inspect the PNG.
    A black image, zero primitives, or a source-voxel preview is not a native-world render check.
 
 Report the ZIP, native world folder, rendered image, blocks/chunks, target version and meaningful

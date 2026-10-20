@@ -262,6 +262,7 @@ export type CalculationsQuery =
   | { readonly view: 'calculations'; readonly cursor?: string; readonly limit: number }
 
 interface WorldRenderOptions {
+  readonly supersample?: 1 | 2
   /** Render-only visible rectangle in the renderer's X/Z frame; never culls whole objects. */
   readonly visibilityBounds?: readonly [number, number, number, number]
   /** Explicit model-resource selection; reuses the shared collector's admission filter. */
@@ -1780,6 +1781,7 @@ export class ModkitMcpRuntime {
                 ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
                 width: query.width,
                 height: query.height,
+                supersample: query.supersample ?? 1,
                 camera,
                 signal: drawSignal,
               })
