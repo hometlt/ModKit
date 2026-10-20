@@ -217,19 +217,23 @@ describe('progressive world preview', () => {
     expect(worldModelAssetStatus(result)).toEqual({ total: 1, converted: 1, partial: false })
     expect(result.layers.flatMap(layer => layer.page.items).filter(item => item.facet === 'objects')
       .map(item => item.id)).toEqual(['wall'])
-    calls.length = 0
-    const shared = fixture(calls)
-    const page = shared.page
-    shared.page = async (request, signal) => {
-      const result = await page(request, signal)
-      return { ...result, items: result.items.map(item => item.facet === 'objects' && item.id === 'wall'
-        ? { ...item, modelComponents: [{ id: 'root', resourceId: 'wall' },
-          { id: 'child', resourceId: 'tree', parentId: 'root' }] } : item) }
+    for (const modelComponents of [
+      [{ id: 'root', resourceId: 'wall' }, { id: 'child', resourceId: 'tree', parentId: 'root' }],
+      [{ id: 'root', resourceId: 'tree' }], // Its own resourceId still names wall.
+    ]) {
+      calls.length = 0
+      const shared = fixture(calls)
+      const page = shared.page
+      shared.page = async (request, signal) => {
+        const result = await page(request, signal)
+        return { ...result, items: result.items.map(item => item.facet === 'objects' && item.id === 'wall'
+          ? { ...item, modelComponents } : item) }
+      }
+      const attached = await inspectCandidateWorld(shared, { maxLayers: 8, maxItemsPerLayer: 16,
+        objectFilter: item => item.derivedFrom === 'cliffs' })
+      expect(calls.filter(call => call.startsWith('model:')).sort()).toEqual(['model:tree', 'model:wall'])
+      expect(worldModelAssetStatus(attached)).toEqual({ total: 2, converted: 2, partial: false })
     }
-    const attached = await inspectCandidateWorld(shared, { maxLayers: 8, maxItemsPerLayer: 16,
-      objectFilter: item => item.derivedFrom === 'cliffs' })
-    expect(calls.filter(call => call.startsWith('model:')).sort()).toEqual(['model:tree', 'model:wall'])
-    expect(worldModelAssetStatus(attached)).toEqual({ total: 2, converted: 2, partial: false })
   })
 
   it('builds the filled height lattice and cliff contours without opening any assets', async () => {

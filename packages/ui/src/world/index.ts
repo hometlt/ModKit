@@ -438,11 +438,15 @@ export async function inspectCandidateWorld(
     }
   }
   // Excluded objects' resources are outside this inspection, including its asset-status receipt.
-  if (objectFilter !== undefined) inspected = inspected.map(entry => Object.freeze({
-    ...entry,
-    page: Object.freeze({ ...entry.page, items: Object.freeze(entry.page.items.filter(item =>
-      !isWorldModelResourceItem(item) || rootResources.has(item.id) || childResources.has(item.id))) }),
-  }))
+  if (objectFilter !== undefined) {
+    const references = new Set(inspected.flatMap(({ page }) => page.items.flatMap(item =>
+      item.facet === 'objects' ? worldObjectModelResources(item) : [])))
+    inspected = inspected.map(entry => Object.freeze({
+      ...entry,
+      page: Object.freeze({ ...entry.page, items: Object.freeze(entry.page.items.filter(item =>
+        !isWorldModelResourceItem(item) || references.has(item.id))) }),
+    }))
+  }
   const childOnly = (id: string) => childResources.has(id) && !rootResources.has(id)
   const resourceItems = inspected
     .flatMap(item => item.page.items)
