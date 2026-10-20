@@ -40,6 +40,20 @@ materials without native slabs, including grass and sand. The vertical reference
 lowest inferred playable cliff level at Minecraft Y=64, matching the separate cliff-world frame.
 The receipt records `materialMapping`, `includeCliffs`, `waterBedColumns` and `sourceFrame`.
 Inspect this mapping before acceptance; green terrain must not silently become moss.
+Dark baked terrain colours are brightened in this mode: black concrete becomes smooth stone,
+deepslate paving becomes stone bricks, and dark brown terracotta becomes ordinary terracotta.
+
+For terrain with the already styled side modules, keep `includeCliffs: true` and add
+`cliffFamilies` (the same explicit `{typePrefix, style}` array as the cliff-library `families`),
+plus `basementBlocks` when needed. Example for Amphion:
+`cliffFamilies: [{typePrefix: "CompoundFacilityCliff1:CliffMade20:", style: "masonry"},
+{typePrefix: "ShakurasCliff0:CliffNatural0:", style: "natural"}], basementBlocks: 5`.
+Use the same cell scale, rise, region and texture mode. The encoder reuses the library templates
+and map assembly; shell columns replace the old ground through their top, including recess air,
+so soil cannot fill niches or protrude above straight ramp sides. Walkable terrain ramp floors
+remain from the terrain owner. Compare the saved native shell blocks and ramp tops against the
+cliff-only world, and inspect foot/plateau joins. The receipt records `cliffComposition`.
+
 
 A fully filled 528×528 terrain has 1089 saved chunks. When the wide native view contains
 exactly those chunks, render it without an explicit `resourceIds` array (that array is limited
