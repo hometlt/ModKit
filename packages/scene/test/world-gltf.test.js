@@ -51,6 +51,27 @@ it('keeps the full rock mask period when the diffuse texture repeats inside it',
   const constantBin = constantResult.bytes.subarray(28 + constantLength)
   assert.deepEqual(new Float32Array(constantBin.buffer, constantBin.byteOffset + constantView.byteOffset, 6),
     Float32Array.of(-.5, 0, 1.5, 0, -.5, 1))
+  const masked = structuredClone(piece)
+  masked.materials[0].shader.parameters.renderModel.standard.blendMode = 0
+  masked.materials[0].shader.parameters.renderModel.standard.alphaTestThreshold = .5
+  masked.primitives[0].positions = Float32Array.of(
+    0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 3, 0, 0, 2, 1, 0, 4, 0, 0, 5, 0, 0, 4, 1, 0)
+  masked.primitives[0].textureCoordinates = Float32Array.of(
+    .125, 0, .125, 0, .125, 0, .75, 0, .75, 0, .75, 0, .125, 0, 1.125, 0, .125, 1)
+  const culled = await worldGlb(makePlan(masked), { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  assert.equal(culled.stats.triangles, 2,
+    'a fully transparent face is omitted; opaque faces and repeated UVs crossing an opaque interior remain')
+  const legacyBatch = { positions: masked.primitives[0].positions,
+    normals: Float32Array.from({ length: 27 }, (_, i) => i % 3 === 2 ? 1 : 0),
+    colors: new Float32Array(36).fill(1), textureCoordinates: masked.primitives[0].textureCoordinates,
+    texture: tex, alphaCutoff: .5 }
+  const legacy = await worldGlb({ ...createWorldWebGlPlan({ items: [] }), texturedTriangles: [legacyBatch] },
+    { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  assert.equal(legacy.stats.triangles, 2, 'the same alpha-discard rule applies to plain textured cliff pieces')
+  const opaque = await worldGlb({ ...createWorldWebGlPlan({ items: [] }),
+    texturedTriangles: [{ ...legacyBatch, alphaCutoff: undefined }] },
+  { terrainTextureSize: 16, maxBytes: 1024 * 1024 })
+  assert.equal(opaque.stats.triangles, 3, 'an opaque material keeps faces even when source texels have zero alpha')
 })
 
 it('keeps visible cliff walls under the rock and pins their shared plateau vertices', async () => {

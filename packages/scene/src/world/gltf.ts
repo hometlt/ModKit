@@ -17,6 +17,8 @@
  * shows where the rock's mask is clear) uses the same opaque ground bake behind the rock. Shared
  * plateau vertices stay fixed; other vertices move 0.001 world units inward to avoid coincident
  * surfaces. Faces fully covered by rock are omitted; visible vertical faces remain.
+ * Alpha-tested model faces that are fully discarded over their filtered UV rectangle are omitted
+ * too: transparent cliff feet can coincide exactly with ground and corrupt a viewer's depth prepass.
  *
  * Limits of this profile: one moment (clip time 0, the plan's poses); no animation, skins or
  * morph targets (geometry is baked); material programs (layered game shaders), team colour and
@@ -202,6 +204,8 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
   const gltfTextures: Record<string, unknown>[] = []
   const materials: Record<string, unknown>[] = []
   const textureIndex = new Map<string, number>()
+  const exportedTextures = new Map<number, SceneRendererTexture>()
+  const maskedMaterials = new Map<number, Readonly<{ texture: SceneRendererTexture; cutoff: number }>>()
   const sceneTextures = new Map<string, SceneRendererTexture>(
     (scene.textures ?? []).map(texture => [texture.id, texture]),
   )
@@ -238,6 +242,9 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
       textureBySource.set(sourceKey, texture)
     }
     textureIndex.set(key, texture)
+    exportedTextures.set(texture, { id: key, width, height, rgba,
+      wrapU: sampler['wrapS'] === CLAMP ? 'clamp' : 'repeat',
+      wrapV: sampler['wrapT'] === CLAMP ? 'clamp' : 'repeat' })
     return texture
   }
   const textureOf = async (id: string | undefined): Promise<number | undefined> => {
@@ -394,6 +401,9 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
       ...(pass.twoSided ? { doubleSided: true } : {}),
       ...(unlit ? { extensions: { KHR_materials_unlit: {} } } : {}),
     })
+    if (pass.blend === 'alpha-test') maskedMaterials.set(material, {
+      texture: exportedTextures.get(index)!, cutoff: threshold > 0 && threshold <= 1 ? threshold : 0.5,
+    })
     return Object.freeze({
       material,
       uvSet: MESH_UV_SETS.get(domain.uvSource)!,
@@ -426,6 +436,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
     const known = materialIndex.get(id)
     if (known !== undefined) return known
     let entry: Record<string, unknown>
+    let coverage: Readonly<{ texture: SceneRendererTexture; cutoff: number }> | undefined
     if (id === TERRAIN_MATERIAL) {
       const texture = await imageTexture(TERRAIN_MATERIAL, bakeWidth, bakeHeight, baked!, {
         magFilter: LINEAR,
@@ -447,6 +458,9 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
       const unlit = material.shading === 'unlit' || material.simpleEffect !== undefined
       if (unlit) unlitUsed = true
       const alphaMode = material.alphaMode ?? 'opaque'
+      if (alphaMode === 'mask' && texture !== undefined) coverage = {
+        texture: exportedTextures.get(texture)!, cutoff: Math.min(1, material.alphaCutoff ?? 0.5),
+      }
       entry = {
         name: id,
         pbrMetallicRoughness: {
@@ -462,6 +476,7 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
       }
     }
     const index = addMaterial(entry)
+    if (coverage !== undefined) maskedMaterials.set(index, coverage)
     materialIndex.set(id, index)
     return index
   }
@@ -528,8 +543,12 @@ export async function worldGlb(plan: WorldWebGlPlan, options: WorldGlbOptions): 
         ? primitive.colors.map(clamp01)
         : undefined
     const material = surface?.material ?? (await materialOf(ground ? TERRAIN_MATERIAL : primitive.materialId))
-    const indices = frontFacing(placed, normals)
-    if (indices !== placed.indices) reversed++
+    const facing = frontFacing(placed, normals)
+    if (facing !== placed.indices) reversed++
+    const coverage = material === undefined ? undefined : maskedMaterials.get(material)
+    const indices = coverage === undefined || uv === undefined ? facing :
+      visibleSurfaceIndices(placed, facing, uv, coverage.texture, coverage.cutoff)
+    if (indices?.length === 0) { omitted++; continue }
     const key = `${String(material)}|${normals === undefined ? 0 : 1}${uv === undefined ? 0 : 1}${colors === undefined ? 0 : 1}`
     let group = groups.get(key)
     if (group === undefined) {
@@ -959,6 +978,48 @@ function flatGroundNormals(primitive: SceneRendererPrimitive): SceneRendererPrim
   return { ...primitive, normals }
 }
 
+/** Filtered channel bounds over a triangle's UV rectangle; broad rectangles are kept conservatively. */
+function coverageRange(
+  texture: SceneRendererTexture, uv: Float32Array, vertices: readonly number[], channel: number,
+): readonly [number, number] | undefined {
+  const range = (axis: number, size: number, wrap: 'repeat' | 'clamp') => {
+    const values = vertices.map(vertex => uv[vertex * 2 + axis]! * size - 0.5)
+    let first = Math.floor(Math.min(...values)), last = Math.ceil(Math.max(...values))
+    if (wrap === 'clamp') {
+      first = Math.max(0, Math.min(size - 1, first)); last = Math.max(0, Math.min(size - 1, last))
+    }
+    return [first, Math.min(size, last - first + 1)] as const
+  }
+  const [x, columns] = range(0, texture.width, texture.wrapU ?? 'repeat')
+  const [y, rows] = range(1, texture.height, texture.wrapV ?? 'repeat')
+  if (columns * rows > 4096) return undefined
+  const pixels = sceneTexturePixels(texture)
+  let low = 255, high = 0
+  for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
+    const u = ((x + column) % texture.width + texture.width) % texture.width
+    const v = ((y + row) % texture.height + texture.height) % texture.height
+    const value = pixels[(v * texture.width + u) * 4 + channel]!
+    low = Math.min(low, value); high = Math.max(high, value)
+    if (low === 0 && high === 255) return [low, high]
+  }
+  return [low, high]
+}
+
+/** Alpha-discarded coplanar faces must not compete with ground in a viewer's depth prepass. */
+function visibleSurfaceIndices(
+  primitive: SceneRendererPrimitive, indices: Uint32Array | undefined, uv: Float32Array,
+  texture: SceneRendererTexture, cutoff: number,
+): Uint32Array | undefined {
+  const count = indices?.length ?? primitive.positions.length / 3, kept: number[] = []
+  for (let corner = 0; corner + 2 < count; corner += 3) {
+    const vertices = [0, 1, 2].map(offset => indices?.[corner + offset] ?? corner + offset)
+    const range = coverageRange(texture, uv, vertices, 3)
+    if (range !== undefined && range[1] < cutoff * 255) continue
+    kept.push(...vertices)
+  }
+  return kept.length === count ? indices : Uint32Array.from(kept)
+}
+
 /**
  * Opaque terrain behind an alpha-tested rock. A small inward bias avoids coincident surfaces;
  * shared plateau vertices stay fixed, so no open seam is introduced. Keeping the common opaque
@@ -972,32 +1033,12 @@ function groundUnderRock(
 ): SceneRendererPrimitive {
   const source = primitive.positions, normals = unitNormals(primitive)
   const mask = batch.maskTexture!, uv = batch.maskTextureCoordinates!
-  const pixels = sceneTexturePixels(mask), channel = Math.max(0, Math.min(3, batch.maskChannel ?? 3))
-  // Include bilinear neighbours; repeated rectangles never need more than one image period.
-  const canShowGround = (vertices: readonly number[]) => {
-    const range = (axis: number, size: number, wrap: 'repeat' | 'clamp') => {
-      const values = vertices.map(vertex => uv[vertex * 2 + axis]! * size - 0.5)
-      let first = Math.floor(Math.min(...values)), last = Math.ceil(Math.max(...values))
-      if (wrap === 'clamp') {
-        first = Math.max(0, Math.min(size - 1, first)); last = Math.max(0, Math.min(size - 1, last))
-      }
-      return [first, Math.min(size, last - first + 1)] as const
-    }
-    const [x, columns] = range(0, mask.width, mask.wrapU ?? 'repeat')
-    const [y, rows] = range(1, mask.height, mask.wrapV ?? 'repeat')
-    // Culling is optional: a broad repeated mask must not scan a whole large image per face.
-    if (columns * rows > 4096) return true
-    for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
-      const u = ((x + column) % mask.width + mask.width) % mask.width
-      const v = ((y + row) % mask.height + mask.height) % mask.height
-      if (pixels[(v * mask.width + u) * 4 + channel]! < 128) return true
-    }
-    return false
-  }
+  const channel = Math.max(0, Math.min(3, batch.maskChannel ?? 3))
   const count = primitive.indices?.length ?? source.length / 3, kept: number[] = []
   for (let corner = 0; corner + 2 < count; corner += 3) {
     const vertices = [0, 1, 2].map(offset => primitive.indices?.[corner + offset] ?? corner + offset)
-    if (!canShowGround(vertices)) continue
+    const range = coverageRange(mask, uv, vertices, channel)
+    if (range !== undefined && range[0] >= 128) continue
     kept.push(...vertices)
   }
   const positions = new Float32Array(kept.length * 3)
