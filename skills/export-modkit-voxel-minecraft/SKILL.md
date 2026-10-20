@@ -67,8 +67,11 @@ water/object selection and resolution. This writer requires the canonical unit-c
    follow cursors, select the actual saved chunks, then supply their `resourceIds` (or `modelComponents[].resourceId`) to the renderer
    (up to 1024). For a 440×440 quarter select the **wide, 33 x 33 chunks** view; the default
    17×17 view cannot cover it. A high-quality still can request `width: 4096`, `height: 3072`,
-   `supersample: 2`: Scene renders at twice each dimension and averages four samples per output
-   pixel. The common CPU renderer still has no GPU shadows. Check converted count against the
+   `supersample: 2`, `retainOutput: true`: Scene renders at twice each dimension and averages four
+   samples per output pixel. Large PNGs exceed the 4MiB inline-image limit; download the complete
+   `data.outputArtifact` through the same chunk/SHA lifecycle, save before releasing, then inspect
+   the saved PNG. This requires the server's output-artifacts authority. The common CPU renderer
+   still has no GPU shadows. Check converted count against the
    receipt, save and visually inspect the PNG.
    A black image, zero primitives, or a source-voxel preview is not a native-world render check.
 

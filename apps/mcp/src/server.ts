@@ -457,6 +457,7 @@ const worldSceneInput = z.discriminatedUnion('view', [
       timeMs: z.number().finite().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
       camera: z.enum(['source', 'orbit']).optional(),
       supersample: z.union([z.literal(1), z.literal(2)]).optional().describe('2 renders at twice each dimension and averages 4 samples per output pixel.'),
+      retainOutput: z.boolean().optional().describe('Return a complete retained PNG instead of an inline image; requires output-artifacts and supports large 4K frames.'),
       width: z.number().int().min(16).max(4_096).default(1_024),
       height: z.number().int().min(16).max(4_096).default(768),
       // the world viewer's orbit: above the horizon, short of straight down

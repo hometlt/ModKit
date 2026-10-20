@@ -105,3 +105,36 @@ it('expires the exported GLB when its subject closes', async () => {
     expect(stale.isError).toBe(true)
   } finally { await app.close() }
 }, 60000)
+
+it('renders a complete retained PNG through the public binary lifecycle without an inline image', async () => {
+  const app = await connected(true)
+  try {
+    const result = await app.client.callTool({ name: 'modkit.world_scene', arguments: {
+      handle: app.handle, view: 'render', width: 64, height: 48, supersample: 2, retainOutput: true,
+    } })
+    const value = data(result)
+    expect(result.content.some(item => item.type === 'image')).toBe(false)
+    expect(value).toMatchObject({ width: 64, height: 48, format: 'png', mediaType: 'image/png' })
+    const artifact = value['outputArtifact'] as { id: string; firstChunkUri: string; byteLength: number; sha256: string }
+    const png = await download(app.client, artifact.firstChunkUri)
+    expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([64, 48])
+    expect(png.length).toBe(artifact.byteLength)
+    expect(createHash('sha256').update(png).digest('hex')).toBe(artifact.sha256)
+    await app.client.callTool({ name: 'modkit.release_output', arguments: { id: artifact.id } })
+    const released = await app.client.readResource({ uri: artifact.firstChunkUri })
+    expect(JSON.parse((released.contents[0] as { text: string }).text).diagnostics[0].code)
+      .toBe('x3.mcp/output-artifact-unknown')
+  } finally { await app.close() }
+}, 60000)
+
+it('requires output authority for a retained world render', async () => {
+  const app = await connected(false)
+  try {
+    const result = await app.client.callTool({ name: 'modkit.world_scene', arguments: {
+      handle: app.handle, view: 'render', width: 64, height: 48, retainOutput: true,
+    } })
+    expect(result.isError).toBe(true)
+    expect((result.structuredContent as McpEnvelope).diagnostics[0]?.code).toBe('x3.mcp/output-artifacts-disabled')
+  } finally { await app.close() }
+}, 60000)

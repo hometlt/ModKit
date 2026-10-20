@@ -262,6 +262,7 @@ export type CalculationsQuery =
   | { readonly view: 'calculations'; readonly cursor?: string; readonly limit: number }
 
 interface WorldRenderOptions {
+  readonly retainOutput?: boolean
   readonly supersample?: 1 | 2
   /** Render-only visible rectangle in the renderer's X/Z frame; never culls whole objects. */
   readonly visibilityBounds?: readonly [number, number, number, number]
@@ -1677,7 +1678,7 @@ export class ModkitMcpRuntime {
               'Animation export requires an installed ffmpeg on PATH.',
             )
           const reservation =
-            query.view === 'animation' ? this.outputs.reserve(entry.id) : undefined
+            query.view === 'animation' || query.retainOutput === true ? this.outputs.reserve(entry.id) : undefined
           try {
             // Host acquisition has its own bounded service deadlines. The encoder starts its
             // 180 s process/frame window after these resources have been acquired.
@@ -1839,14 +1840,16 @@ export class ModkitMcpRuntime {
               })
             }
             const { frame, camera, sampled } = await draw(timeMs ?? 0)
-            const shown = mcpImage(
-              await encodePng(frame.width, frame.height, frame.rgba, drawSignal),
-            )
-            if (shown === undefined)
+            const png = await encodePng(frame.width, frame.height, frame.rgba, drawSignal)
+            const shown = query.retainOutput === true ? undefined : mcpImage(png)
+            if (shown === undefined && query.retainOutput !== true)
               throw new McpOperationError(
                 'x3.mcp/render-too-large',
-                'The drawn world exceeds the MCP image limit.',
+                'The drawn world exceeds the inline image limit; request retainOutput: true.',
               )
+            const outputArtifact = query.retainOutput === true ? this.outputs.commit(reservation!, png, {
+              sourceRevision: String(descriptor.revision), operationId: WORLD_SCENE_SOURCE_CONTRACT,
+            }) : undefined
             return envelope({
               snapshotId: model.snapshotId,
               completeness: complete ? 'complete' : 'partial',
@@ -1855,11 +1858,12 @@ export class ModkitMcpRuntime {
                 width: frame.width,
                 height: frame.height,
                 camera,
+                ...(outputArtifact === undefined ? {} : { outputArtifact, format: 'png', mediaType: 'image/png' }),
                 ...(sampled === undefined ? {} : { timeMs: sampled.timeMs }),
                 models: { total: models.total, converted: models.converted },
                 ...(bounds === undefined ? {} : { visibilityBounds: bounds }),
               },
-              images: [shown],
+              images: shown === undefined ? [] : [shown],
             })
           } finally {
             if (reservation !== undefined) this.outputs.cancel(reservation)
