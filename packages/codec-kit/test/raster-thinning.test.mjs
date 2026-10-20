@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { thinBinaryMask } from '../dist/raster/thinning.js'
+import { thinBinaryMask, fillSmallBinaryHoles } from '../dist/raster/thinning.js'
 
 test('narrows a broad straight band without modifying input or disconnecting its path', () => {
   const mask = new Uint8Array(15 * 15)
@@ -26,4 +26,15 @@ test('retains a ring hole and rejects oversized or cancelled work', () => {
 test('does not erase a two-by-two component', () => {
   const out = thinBinaryMask(2, 2, Uint8Array.from([1,1,1,1]))
   assert.ok(out.some(Boolean))
+})
+
+test('fills only small enclosed raster holes, preserving the exterior and larger interiors', () => {
+  const mask = new Uint8Array(81).fill(1)
+  mask[0] = 0; mask[2 + 2 * 9] = 0
+  for(let y=4;y<7;y++)for(let x=4;x<7;x++)mask[x+y*9]=0
+  const out = fillSmallBinaryHoles(9,9,mask,1)
+  assert.equal(out[0],0)
+  assert.equal(out[2+2*9],1)
+  assert.equal(out[5+5*9],0)
+  assert.equal(mask[2+2*9],0)
 })
