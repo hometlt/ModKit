@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "codec": "wd",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-receipts.test.ts",
+    "samples": [
+      {
+        "name": "every-record.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#wd"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:every-record.wd:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "874a1c5cceeba4471d7a5f57bb9f59213eeb423b532addd4ce8410efdf7041ad",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "executed": true,
+      "caseIds": ["synthetic:every-record.wd:view.inspect"]
+    }
+  ]
+}

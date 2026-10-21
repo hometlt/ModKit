@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the SoundWave export and the fmt chunk of the RIFF/WAVE embedded in the sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.soundwave.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.soundwave.uasset",
+        "sha256": "a0ae6817bebfbeae4a9ccc1be7d28805be785fc1c5b6ecc6d408de60b2330323"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.soundwave.uasset:summary",
+      "verdict": "identical",
+      "resultDigest": "ccef0c55722edace90401f0400fbb5d0fa50807fcd58b3bd2307110af467bb1c",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/uasset/operation/audio.inspect",
+      "kind": "operation",
+      "legacyOperation": "audio.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.soundwave.uasset:summary"
+      ]
+    }
+  ]
+}

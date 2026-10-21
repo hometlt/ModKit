@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "codec": "fsb",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.audio-media-source",
+    "oracle": "MK2 decodeFsb5Fadpcm's samples of the frame (coefficients 60/0, shift 0, history 100, codes 1 and 0xF): 94 and 87",
+    "suite": "modkit-extensions-other/test/behavior/k1-fmod-receipts.test.ts",
+    "samples": [
+      {
+        "name": "fadpcm.fsb",
+        "builder": "modkit-extensions-other/test/behavior/fmod-fixtures.ts#fsb5(0x10) + fadpcmFrame"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:fadpcm.fsb:audio-media-source",
+      "verdict": "identical",
+      "resultDigest": "fef4f9f0f549a8ecc11c6f3cdb2835ef2f9f6f8af84ce119b84521944e7d5fd6",
+      "mk3Operation": "common.view/audio-media-source encoded (codec-kit decodeFadpcm)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
+      "kind": "operation",
+      "legacyOperation": "audio.decode",
+      "adapterOperation": "view.audio-media-source",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "executed": true,
+      "caseIds": ["synthetic:fadpcm.fsb:audio-media-source"]
+    }
+  ]
+}

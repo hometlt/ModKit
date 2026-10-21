@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "codec": "fsb",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/firelight/fmod/codecs/fsb at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-fmod-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.fsb",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.fsb",
+        "sha256": "7e33e52028fd5b49b54ff447f0be3bf5487bff1e57872d343303114081ea12a9"
+      },
+      {
+        "name": "fadpcm.fsb",
+        "builder": "modkit-extensions-other/test/behavior/fmod-fixtures.ts#fsb5(0x10) + fadpcmFrame"
+      },
+      {
+        "name": "pcm16.fsb",
+        "builder": "modkit-extensions-other/test/behavior/fmod-fixtures.ts#fsb5(0x02)"
+      },
+      {
+        "name": "mk2 codecs/fsb/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/codec.manifest.json",
+        "sha256LF": "5492f4449d044884bb0152074bf3e30478ad35edba5c2918ee3f2fb2d22f864d"
+      },
+      {
+        "name": "mk2 codecs/fsb/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/src/index.ts",
+        "sha256LF": "b2b4c51287b2187c831df341f5574ab6bd14f995b39cc36a86e06a64c177dd2e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#Fsb5Stream+Fsb5File+parseFsb5",
+      "verdict": "identical",
+      "resultDigest": "b25619ddd76b04b61eb486612e6ca2373f53a475f1b6d105afdd7911320d66ce",
+      "mk3Operation": "fsb/fsb5.ts readFsb5"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseFsb5(version 0, extra chunks)",
+      "verdict": "identical",
+      "resultDigest": "c50a3932653dce4d2d224536557f9189707a203e8d21cd60d1e49514f0606797",
+      "mk3Operation": "fsb/fsb5.ts readFsb5: the 0x40-byte header and the channel (0x01) and rate (0x02) chunks"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseFsb5(refusals)",
+      "verdict": "identical",
+      "resultDigest": "d8d6ae43601d6cb5044229d14d4443f6b6409541b9ad6a92131b29c85545576e",
+      "mk3Operation": "fsb/fsb5.ts readFsb5 refuses a size the header does not add up to and an unknown rate code"
+    },
+    {
+      "id": "mk2-source:src/index.ts#isFsb5+fsbCodec.sniff",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "fsb/fsb5.ts isFsb5 (detect)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#decodeFsb5Fadpcm+decodeFadpcmFrame+fsbCodec.decode",
+      "verdict": "identical",
+      "resultDigest": "7c665dc81228ff1d6820f25147d3af47598114711d6fdce7ebbcad32f3c55b0d",
+      "mk3Operation": "common.view/audio-media-source (codec-kit decodeFadpcm)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#describeFsb5+readStreamName+fsbCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "0a38b56cdef3abf3328bbe055c9a04dac4910ddf53bf853fd1aa88261787ad8b",
+      "mk3Operation": "view.inspect; the tree names each stream (MK3 also requires the name to lie in the string area and end with NUL)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#exportFsb5+encodePcm16Wav+fsbCodec.export",
+      "verdict": "identical",
+      "resultDigest": "30d65c3c095212f05b3ad14be7eb72cf9a07ad0400f9baf17743d845f78c70e0",
+      "mk3Operation": "export.raw (MK2 target 'fsb'); export.convert { target: 'wav' } through codec-kit encodeWav; other targets were MK2's injected transcoder, not carried"
+    },
+    {
+      "id": "mk2-source:src/index.ts#fsbCodecName",
+      "verdict": "identical",
+      "resultDigest": "e2075b48d1a5208247547e510726c4345708feba6c6bb4a980a96b08d043d74a",
+      "mk3Operation": "fsb/fsb5.ts CODECS"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "8aad3956eb2914a6ec9079810c46bfb9f2b6b2d48c5e6fb05c28c66094f604f7",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "6c22d30746acd9bf19b248c177e41225a9de2915da42f93789dccf4113601fa8",
+      "mk3Operation": "view.inspect, common.view/audio-media-source, export.raw, export.convert"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/fsb/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#Fsb5Stream+Fsb5File+parseFsb5",
+        "mk2-source:src/index.ts#parseFsb5(version 0, extra chunks)",
+        "mk2-source:src/index.ts#parseFsb5(refusals)",
+        "mk2-source:src/index.ts#isFsb5+fsbCodec.sniff",
+        "mk2-source:src/index.ts#decodeFsb5Fadpcm+decodeFadpcmFrame+fsbCodec.decode",
+        "mk2-source:src/index.ts#describeFsb5+readStreamName+fsbCodec.describe",
+        "mk2-source:src/index.ts#exportFsb5+encodePcm16Wav+fsbCodec.export",
+        "mk2-source:src/index.ts#fsbCodecName",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

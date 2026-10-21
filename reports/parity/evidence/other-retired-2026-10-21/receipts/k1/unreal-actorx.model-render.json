@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-actorx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "model.render",
+    "oracle": "the minimal.actorx.psk sample exported by the codec's own model.export-uvm and drawn by the core UVM codec's model.render, both as the host runs them",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-model-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.actorx.psk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.actorx.psk",
+        "sha256": "4c6f6e7a9d2e3249e883e9e1c06d6678116d107e060fff2805d9f4e998413c9f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.actorx.psk:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "63ca5e665c86aa25ebe93c527330cea53c9725277ba14c0e27edb42bc425acf4",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:minimal.actorx.psk:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.render",
+      "kind": "operation",
+      "legacyOperation": "model.render",
+      "adapterOperation": "model.render",
+      "targetOperation": "model.render",
+      "handlerId": "render-uvm-scene",
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.actorx.psk:model.export-uvm",
+        "synthetic:minimal.actorx.psk:model.export-uvm:model.render"
+      ]
+    }
+  ]
+}

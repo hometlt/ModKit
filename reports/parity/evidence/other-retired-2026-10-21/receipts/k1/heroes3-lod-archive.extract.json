@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "codec": "heroes3-lod",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "H3bitmap.lod",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#lod"
+      },
+      {
+        "name": "Heroes3.snd",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#snd"
+      },
+      {
+        "name": "Sounds.snd",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#snd"
+      },
+      {
+        "name": "VIDEO.VID",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#vid"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:H3bitmap.lod:HelpText.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "bfcfd40cc45b0f0714fee9eec49b2f8a524a5a3fb13234966695566bd37117ba",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:H3bitmap.lod:AvWattak.def:container.extract",
+      "verdict": "identical",
+      "resultDigest": "c8fe7b9484a670d318cf2e0f390359df1261cce7ab253e58fe1586abc1a3e109",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:Heroes3.snd:BUTTON.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e95f83904fec3671ce04bcd1d44cae9a3f4a999337017da8c1f5fa38d456f88b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:Sounds.snd:BUTTON.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e95f83904fec3671ce04bcd1d44cae9a3f4a999337017da8c1f5fa38d456f88b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:Sounds.snd:DRAGON.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "c72a89030f27874cdd27e3f7b5ca034204e549cc13bb285dd11df93b2d62cd99",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:VIDEO.VID:INTRO.smk:container.extract",
+      "verdict": "identical",
+      "resultDigest": "86fa85096dc44fdcfcfd32619fbbd1ec67ff5bbba1e78d87e1f9cebf14ae03f1",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:VIDEO.VID:OUTRO.smk:container.extract",
+      "verdict": "identical",
+      "resultDigest": "fab05529800594886e5fd1abe7a32c19e6614d93c16520e4a0553ead7818a048",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:H3bitmap.lod:HelpText.txt:container.extract",
+        "synthetic:H3bitmap.lod:AvWattak.def:container.extract",
+        "synthetic:Heroes3.snd:BUTTON.wav:container.extract",
+        "synthetic:Sounds.snd:BUTTON.wav:container.extract",
+        "synthetic:Sounds.snd:DRAGON.wav:container.extract",
+        "synthetic:VIDEO.VID:INTRO.smk:container.extract",
+        "synthetic:VIDEO.VID:OUTRO.smk:container.extract"
+      ]
+    }
+  ]
+}

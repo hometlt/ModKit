@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "bnk",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "MK2 describeBnk/parseBnk on the sample: bank version 135, id 42, chunks BKHD DIDX DATA, one DIDX stream, 48 DATA bytes",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.bnk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.bnk",
+        "sha256": "82dbd486cee83b63e0eb25be2f5efd88041cd93df2bab2c80fbeac7055859025"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.bnk:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "525480a0d613077fee71a29bd910e95724679e1fde97d9ed0192002dc90a43f1",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
+      "kind": "operation",
+      "legacyOperation": "audio.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.bnk:view.inspect"]
+    }
+  ]
+}

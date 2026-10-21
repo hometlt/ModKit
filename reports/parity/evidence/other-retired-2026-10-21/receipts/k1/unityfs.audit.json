@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "codec": "unityfs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/unity/engine/codecs/unityfs at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-audit-receipts.test.ts",
+    "samples": [
+      {
+        "name": "cab.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs(CAB-cafe = unitySerialized(UNITY_SAMPLE), CAB-cafe.resS = SAMPLE_PIXELS.ress)",
+        "sha256": "3d91ac9788bc0f0a2abcc3f6ab96dae0b7929c79480396a28ddca5852f888bf0"
+      },
+      {
+        "name": "lzma.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs(LZMA_STREAM in one LZMA block)",
+        "sha256": "9f87c4fa537b85391061123eafc49af74bea4c292704f0477c803e372902f82f"
+      },
+      {
+        "name": "CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unitySerialized(UNITY_SAMPLE)",
+        "sha256": "3e86619e08672be789d3348ee535e916b529d540044c674b520f758400f84346"
+      },
+      {
+        "name": "not-unityfs.bin",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#'UnityFSX' + 24 zero bytes",
+        "sha256": "55cdae4187764f4a9e52164596f68cfd14b22c8095245ed73d46f7f7a6bd361d"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/codec.manifest.json",
+        "sha256LF": "c19d2b7a2ca06ff087920498bfc002b095d709a3323bf2d57eab6ce38fc93c9e"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/src/detect.ts",
+        "sha256LF": "609bb792f0b59b032cdcf9f12384a0f17d9f72ddfeb81d34ac27f9071d987972"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/src/index.ts",
+        "sha256LF": "29d76858057cbc2e8f61edae7f86279ac34e12e1c6a635e1752c7b2a4c0dabda"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "547ee2503741a868b7cfd3439fd5359858299be856a1475d06db916d64b63d2d",
+      "mk3Operation": "probe (unityfs manifest probe plan) over cab.unity3d, lzma.unity3d, CAB-cafe, not-unityfs.bin"
+    },
+    {
+      "id": "mk2-source:isUnityFs",
+      "verdict": "identical",
+      "resultDigest": "547ee2503741a868b7cfd3439fd5359858299be856a1475d06db916d64b63d2d",
+      "mk3Operation": "unityfs/unityfs.ts isUnityFs"
+    },
+    {
+      "id": "mk2-source:parseUnityFsArchive+parseUnityFsArchiveAsync+UnityFsEntry+UnityFsArchive",
+      "verdict": "identical",
+      "resultDigest": "41e40befc44329c267098aa7737bd0ff9ae9190683cb402c09463563c7d7b3b7",
+      "mk3Operation": "unityfs/unityfs.ts readUnityFsBundle (header and block table by ranges)"
+    },
+    {
+      "id": "mk2-source:default unityFsCodec#open",
+      "verdict": "identical",
+      "resultDigest": "2164107754b2b466f105f2ac80d08166ae6f3a1c78e9a00c28d70e61b240e897",
+      "mk3Operation": "common.view/namespace-entry-source, container.extract (LZ4/LZMA blocks decoded by codec-kit)"
+    },
+    {
+      "id": "mk2-source:default unityFsCodec#open (serialized objects, .objects.txt, bundle resources)",
+      "verdict": "identical",
+      "resultDigest": "c20420a795e1e5481c09cf26c27bede028c4107ff966edebb8ed206fa9b6c9d3",
+      "mk3Operation": "modkit/unity-assets on the nested CAB entry; its .resS sibling bound as the companion"
+    },
+    {
+      "id": "mk2-source:resolveUnitySerializedDependencies",
+      "verdict": "identical",
+      "resultDigest": "5e8ce8d199bb93734d75932c36d32942b5d6505c2b98d1dc4a9d652758b159c2",
+      "mk3Operation": "not carried (planned: cross-file dependency graph with the Mesh/Material/Animation port, GAMES-UNITY)"
+    },
+    {
+      "id": "mk2-source:default unityFsCodec#describe",
+      "verdict": "identical",
+      "resultDigest": "635ce5ea39063cec83dc41734f8b7210a9ee47ae0802322fd4bba42811b6ca7d",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-manifest:match.magic",
+      "verdict": "identical",
+      "resultDigest": "3df97b3a97307a1f7924435ee5ff2e228d497e0954928ab8256d215d7a19ab0c",
+      "mk3Operation": "spec.match.signatures"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unityfs/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:isUnityFs",
+        "mk2-source:parseUnityFsArchive+parseUnityFsArchiveAsync+UnityFsEntry+UnityFsArchive",
+        "mk2-source:default unityFsCodec#open",
+        "mk2-source:default unityFsCodec#open (serialized objects, .objects.txt, bundle resources)",
+        "mk2-source:resolveUnitySerializedDependencies",
+        "mk2-source:default unityFsCodec#describe",
+        "mk2-manifest:match.magic",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

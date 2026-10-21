@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-sga",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "attrib.v2.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(2, SGA_FILES)",
+        "sha256": "1aeb16e8cf425b9d6c4304921a1c8571a4b49bdda68d1095d796bc900a70a4bf"
+      },
+      {
+        "name": "scar.v7.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(7, SGA_V7_FILES)",
+        "sha256": "8921ce14a4428d5b29188056d6c9eee1e152f6e34bf49ffcb8c737232cb96607"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:attrib.v2.sga:listing",
+      "verdict": "identical",
+      "resultDigest": "3c14753596dd4bd7277eff2aba9a10e61cfe677d6e4ca245a96e5f7a7c25ec8a",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:attrib.v2.sga:DATA/readme.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "2e7395ae1201ea27d6309bd0fe0e76aed94abc1eb95228c82a813ee65be4b27d",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:attrib.v2.sga:DATA/attrib/hello.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "058ca3691224cd07369a9f80c5a7b6a3bbebf61af7cdb4d1339fe7ed78e6322e",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:attrib.v2.sga:DATA/attrib/zlib.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4e11d93b7a313d6a930589d4760207e8c4bc70e11d98d630f48b99b7ad07c180",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:scar.v7.sga:listing",
+      "verdict": "identical",
+      "resultDigest": "6417b20522121d334f252592a54a390934a91079f1a04831da7dc1fc49835b6a",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:scar.v7.sga:DATA/game/winconditions/rules.scar:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4a4003debaf308b9d8cf19fd61209ffbda6d831509cec3a28ba2a68ec25f4f80",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:scar.v7.sga:DATA/game/winconditions/ui.scar:container.extract",
+      "verdict": "identical",
+      "resultDigest": "b5b011ce8d29cf3dbbfaeb7542450aa7ae808bb77eee4cc6f3c5c91bd774c961",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:attrib.v2.sga:listing",
+        "synthetic:attrib.v2.sga:DATA/readme.txt:container.extract",
+        "synthetic:attrib.v2.sga:DATA/attrib/hello.txt:container.extract",
+        "synthetic:attrib.v2.sga:DATA/attrib/zlib.txt:container.extract",
+        "synthetic:scar.v7.sga:listing",
+        "synthetic:scar.v7.sga:DATA/game/winconditions/rules.scar:container.extract",
+        "synthetic:scar.v7.sga:DATA/game/winconditions/ui.scar:container.extract"
+      ]
+    }
+  ]
+}

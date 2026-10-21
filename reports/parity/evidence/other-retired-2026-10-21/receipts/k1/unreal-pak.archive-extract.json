@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-pak",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the bytes of each entry written into the sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unreal.pak",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.pak",
+        "sha256": "dd0928ff87ca30fd91378f272b8271587acb36c95741463c3eedc70f2f0058be"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unreal.pak:Demo/Content/Meshes/Unit.uasset",
+      "verdict": "identical",
+      "resultDigest": "2996541f273699bf567256f77dd1c22f0ca81ba9f2a86779dfee9af7c35f288a",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.unreal.pak:Demo/Content/Config/DefaultGame.ini",
+      "verdict": "identical",
+      "resultDigest": "eb7d495d1eb988c5d206c113fccc48ecf2da032b34f4483ec7edc85cfd5b5761",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unreal.pak:Demo/Content/Meshes/Unit.uasset",
+        "synthetic:minimal.unreal.pak:Demo/Content/Config/DefaultGame.ini"
+      ]
+    }
+  ]
+}

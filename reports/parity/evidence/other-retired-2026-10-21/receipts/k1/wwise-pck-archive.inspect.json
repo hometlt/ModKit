@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "wwise-pck",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "MK2 describeWwisePck on the sample: little-endian, header 40 bytes, no banks, one sound, no externals",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.wwise.pck",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.wwise.pck",
+        "sha256": "abc2debabd6122a1e71c3578b435c486567b1973c3561a401df629b5b1359d21"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.wwise.pck:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "399194b7563487e8d303f5954ce404047123d78d275771be3d3ae30c55174734",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.wwise.pck:view.inspect"]
+    }
+  ]
+}

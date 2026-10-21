@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "codec": "rgt",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/rgt at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      },
+      {
+        "name": "red.rgt",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rgtSample",
+        "sha256": "e831eb4862081934199898384bc0410845677dbd46d55e14f87ced45af15b4d8"
+      },
+      {
+        "name": "shader.rsh",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rshSample",
+        "sha256": "36422fbd4e85256def1989534a92d9e3773197b749732b945fe733ac5fff876f"
+      },
+      {
+        "name": "default.wtp",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#wtpSample",
+        "sha256": "cc87b4cb63a5eb4c138ec9a974e5317682b47516bb7e74d890af61bc88f94c1b"
+      },
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      },
+      {
+        "name": "image.rrtex",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rrtexSample",
+        "sha256": "481f1db1d9fefe32d375fa2d025f3d2c23b3ef506e37662138e1640c3c55ab1f"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rgt/codec.manifest.json",
+        "sha256LF": "09be470c15d5473b1204180a6e71ca4d922a3a090b628837712f2ba3d36f55c6"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rgt/src/detect.ts",
+        "sha256LF": "0288d7a7b12e717f974aa005e3254a4693cd8408ca17c63d2989204fa3c4d603"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rgt/src/index.ts",
+        "sha256LF": "2e6b004c9a3edc62e2fc09f53a1d79b1ced8cc5e0d864618e4c74ef9611c627b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "5a3c8592bd47b27e83b1d19c0c2ad02e4cac7d124f45fd68464ac6a42fe11937",
+      "mk3Operation": "probe (rgt manifest probe plan) over red.rtx, red.rgt, shader.rsh, default.wtp, model.whm, image.rrtex"
+    },
+    {
+      "id": "mk2-source:src/index.ts#rgtCodec",
+      "verdict": "identical",
+      "resultDigest": "dffa0a76967a6d710763b24218bea54fcc0b743f889ba001183b5c3f191f84e6",
+      "mk3Operation": "view.inspect, common.view/raster-image-source"
+    },
+    {
+      "id": "mk2-source:src/index.ts#rgtCodec:red.rtx",
+      "verdict": "identical",
+      "resultDigest": "d9f569bd0b61603190e16acafb979a5dbdac3278043e32c4a74a8d14990c8e28",
+      "mk3Operation": "view.inspect, common.view/raster-image-source"
+    },
+    {
+      "id": "mk2-source:src/index.ts#rgtCodec.encode",
+      "verdict": "identical",
+      "resultDigest": "5417107451e46d28ab9c178f33a83cce310a4fb85b9290b3580d364aade036d8",
+      "mk3Operation": "not carried (planned: DXT5 encoder codec-kit/texture/bc-encode + one writer through the write plan, task T-DXT)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "c427f6e266e3157748b617086fcf9b47f957e5eab01eac7038f8cbc75e727a79",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "165882623614e0d005e94f2616148a152576d1fdf480de184cc07f7d5275b30d",
+      "mk3Operation": "view.inspect, common.view/raster-image-source, not carried (planned, task T-DXT)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rgt/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:src/index.ts#rgtCodec",
+        "mk2-source:src/index.ts#rgtCodec:red.rtx",
+        "mk2-source:src/index.ts#rgtCodec.encode",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

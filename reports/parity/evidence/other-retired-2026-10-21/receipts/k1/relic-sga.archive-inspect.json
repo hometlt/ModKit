@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-sga",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "attrib.v2.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(2, SGA_FILES)",
+        "sha256": "1aeb16e8cf425b9d6c4304921a1c8571a4b49bdda68d1095d796bc900a70a4bf"
+      },
+      {
+        "name": "scar.v7.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(7, SGA_V7_FILES)",
+        "sha256": "8921ce14a4428d5b29188056d6c9eee1e152f6e34bf49ffcb8c737232cb96607"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:attrib.v2.sga:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "3227f471558978921756883c3082efec01e04a39fcf275e76ff0df1a918fe87f",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:scar.v7.sga:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "5b909612e5b87e3355575bcfaadff077aec060db5d9595a6ba00a7537c894bd0",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:attrib.v2.sga:view.inspect",
+        "synthetic:scar.v7.sga:view.inspect"
+      ]
+    }
+  ]
+}

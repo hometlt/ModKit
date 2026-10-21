@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-res",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-audits.test.ts",
+    "samples": [
+      {
+        "name": "unknown.res",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#res(3)",
+        "sha256": "72a65b6e3485c0218c21ec32cd99ec28a8365a07067916827c57d648e005676f"
+      },
+      {
+        "name": "EARTH2150.par",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE, 3)",
+        "sha256": "cb08e1cef1aa558e34ad474ab3be7abe77feb0a682a35bac5a63838cc5099770"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res/codec.manifest.json",
+        "sha256LF": "0042e03d15a61fb47af8ce97dbe58a6d3b9a09d342350745f9d1b1156e47233d"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res/src/index.ts",
+        "sha256LF": "1a03ef1f9bdc7646fbb16dbdc90193d87e82f2ae4f50ba3bbdbba1d83278e1e3"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isEarthRes",
+      "verdict": "identical",
+      "resultDigest": "72422c7520365c10505ce2e298d8ddae62e7678027922329b504125a71d118b4",
+      "mk3Operation": "earth-res/res.ts isEarthRes"
+    },
+    {
+      "id": "mk2-source:inspectEarthRes+EarthResInspection",
+      "verdict": "identical",
+      "resultDigest": "3a5f5ce2529649af732e5cf8e3613101089556a534881bde2a37d0822abf50c1",
+      "mk3Operation": "earth-res/res.ts inspectEarthRes"
+    },
+    {
+      "id": "mk2-source:default earthResCodec",
+      "verdict": "identical",
+      "resultDigest": "49f41b8e1595a55040d14f78ff9fba68631746ccfa2f1423e6b944419a721a50",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "192f61f224a0497add68e4e967dae078f08e6fbd26f03a8297fd164a8be73771",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "c2ded3507b5a2b79091181f6ba8248ac0747637c77e666c78f9cfc81cc707816",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-res/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isEarthRes",
+        "mk2-source:inspectEarthRes+EarthResInspection",
+        "mk2-source:default earthResCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

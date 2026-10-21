@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-mesh",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the name, positions and triangle indices written into the MKXUNITYMESH sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-model-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unitymesh",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unitymesh",
+        "sha256": "5cfafa5280ffa28948891e6c232152467057257b487f1c111b2f7f31d1bcf0d8"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unitymesh:info",
+      "verdict": "identical",
+      "resultDigest": "7c565879ffaf28e807db672e5e20e1be02293826d27ca05a11da37e7706a52e2",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.unitymesh:nodes",
+      "verdict": "identical",
+      "resultDigest": "faa6d0cb2459562954255bc2e5b2f008db1b2a2eecc3a9a0fc0d2dd0e84cb6b0",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.unitymesh:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "aba9cc6b4bb0deb70d3a8bad02b88f18e7f8eb5bf6a5311375971e0580446cb3",
+      "mk3Operation": "common.view/model-scene-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-mesh.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unitymesh:info",
+        "synthetic:minimal.unitymesh:nodes",
+        "synthetic:minimal.unitymesh:primitive-0"
+      ]
+    }
+  ]
+}

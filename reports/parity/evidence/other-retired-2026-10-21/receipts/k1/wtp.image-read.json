@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "codec": "wtp",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.raster-image-source",
+    "oracle": "the pixels written into each image of the synthetic texture, top-down RGBA",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "default.wtp",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#wtpSample",
+        "sha256": "cc87b4cb63a5eb4c138ec9a974e5317682b47516bb7e74d890af61bc88f94c1b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:default.wtp:info",
+      "verdict": "identical",
+      "resultDigest": "68e1650a9e910f32d70fa8d2a6f958a7bbba9584c70b7fe3c70b99e9a002b904",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:default.wtp:frame-0",
+      "verdict": "identical",
+      "resultDigest": "8b4da1575e97eb566d902a183d704e9032d9d022d7b11864457ba703d0462f8d",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:default.wtp:frame-1",
+      "verdict": "identical",
+      "resultDigest": "e5f1602c36508453714960ec5237e42c1dec37fc8ade1785654feb3ca3b9e8fe",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:default.wtp:frame-2",
+      "verdict": "identical",
+      "resultDigest": "3e51c25791e4bb738d6343c0911e204bcb578e913ff9ddb55382e34110511a35",
+      "mk3Operation": "common.view/raster-image-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wtp/operation/image.read",
+      "kind": "operation",
+      "legacyOperation": "image.read",
+      "adapterOperation": "view.raster-image-source",
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:default.wtp:info",
+        "synthetic:default.wtp:frame-0",
+        "synthetic:default.wtp:frame-1",
+        "synthetic:default.wtp:frame-2"
+      ]
+    }
+  ]
+}

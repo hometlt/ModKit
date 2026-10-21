@@ -5,7 +5,6 @@ import { resolve } from 'node:path'
 const REPOSITORIES = [
   'modkit-extensions-blizzard',
   'modkit-extensions-ea',
-  'modkit-extensions-other',
   'modkit-extensions-annihilation',
   'modkit-extensions-warzone',
 ]

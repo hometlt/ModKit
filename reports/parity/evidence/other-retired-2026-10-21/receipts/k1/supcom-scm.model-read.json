@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "codec": "supcom-scm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the positions, winding, tangent frames, UV sets, bone indices and bone records written into the synthetic SCM",
+    "suite": "modkit-extensions-other/test/behavior/k1-supcom-receipts.test.ts",
+    "samples": [
+      {
+        "name": "UEL0101_lod0.scm",
+        "builder": "modkit-extensions-other/test/behavior/supcom-fixtures.ts#unitScm",
+        "sha256": "77ddd27cc2b6722ef5f30f2c6ba13404e15ef8b5ba1d9100a385a56dbbffddca"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:UEL0101_lod0.scm:info",
+      "verdict": "identical",
+      "resultDigest": "eccba8074bbdeccd295d532bac83b1204ad09dcb4afbf00ebb45e50b7cee8278",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:UEL0101_lod0.scm:nodes",
+      "verdict": "identical",
+      "resultDigest": "fe43bf907cb627a3947eb2b1093b55899e1efd670071582231d2dab8b90279f4",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:UEL0101_lod0.scm:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "be8d8739518e2614621f3410eaf35804bbb76ff9482f8edc501aca5d220a554c",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:UEL0101_lod0.scm:skeleton",
+      "verdict": "identical",
+      "resultDigest": "7cbe88d9ef613ffa023f4f94c4e731d0345c460f686e845f8322b1dc1c894ea5",
+      "mk3Operation": "common.view/model-skeleton-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:UEL0101_lod0.scm:info",
+        "synthetic:UEL0101_lod0.scm:nodes",
+        "synthetic:UEL0101_lod0.scm:primitive-0",
+        "synthetic:UEL0101_lod0.scm:skeleton"
+      ]
+    }
+  ]
+}

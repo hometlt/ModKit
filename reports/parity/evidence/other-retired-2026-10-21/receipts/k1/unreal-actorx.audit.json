@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-actorx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.actorx.psk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.actorx.psk",
+        "sha256": "4c6f6e7a9d2e3249e883e9e1c06d6678116d107e060fff2805d9f4e998413c9f"
+      },
+      {
+        "name": "rig.psk",
+        "builder": "modkit-extensions-other/test/behavior/unreal-actorx-fixtures.ts#psk",
+        "sha256": "224d9917d302bfb21b871262a00c71e153c0594865ed07a15d0166f3ef8c5d48"
+      },
+      {
+        "name": "wave.psa",
+        "builder": "modkit-extensions-other/test/behavior/unreal-actorx-fixtures.ts#psa",
+        "sha256": "627a00fdd921f8e51ecca4305c634475d988dfe62a2b40aada51c502ee4847f7"
+      },
+      {
+        "name": "mk2 codecs/unreal-actorx/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json",
+        "sha256LF": "7c920244a5abd6bc36a693570f39a0f4ea14878c40706d50c66bd90ac9f2d1a1"
+      },
+      {
+        "name": "mk2 codecs/unreal-actorx/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/index.ts",
+        "sha256LF": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987"
+      },
+      {
+        "name": "mk2 codecs/unreal-actorx/src/implementation.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
+        "sha256LF": "0f08a2b465bbcfd5e7edcfa4e3fef2cbdf75efeacf36f3d5a1e36b93f54e8672"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/implementation.ts#isUnrealActorX+isUnrealActorXPsk+isUnrealActorXPsa",
+      "verdict": "identical",
+      "resultDigest": "caf7bec7b5897db6f98bf7782eee08f57a04991e936b48839106e0b833fda510",
+      "mk3Operation": "unreal-actorx/actorx.ts detectActorX"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#parseUnrealActorXPskRenderModel",
+      "verdict": "identical",
+      "resultDigest": "5ee622e0e286c024593fae1f52300862a8a7c0438653f44758889945e4977228",
+      "mk3Operation": "unreal-actorx/actorx.ts readPsk via view.inspect and view.model-scene-source"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#parseActorXPsk (skin, bind pose, VTXNORMS, VERTEXCOLOR, EXTRAUV, morphs)",
+      "verdict": "identical",
+      "resultDigest": "0a5a9e3e399d1c326bbaef0d070f198ca942966b994903c10751e6adb94bbdfb",
+      "mk3Operation": "unreal-actorx/actorx.ts readPsk: skinned primitives, bone nodes, morph targets"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#parseUnrealActorXPsaRenderModel",
+      "verdict": "identical",
+      "resultDigest": "90dd38897fb91a81a60bf6d69f0cd1e192999507c8108fba27b133cdde6f611c",
+      "mk3Operation": "unreal-actorx/actorx.ts readPsa: skeleton and one clip a sequence"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#parseUnrealActorXRenderModel (PSA companions, material and animation sidecars)",
+      "verdict": "identical",
+      "resultDigest": "255b32b957299b584091574e2c3ab1d6fc5966c4e8b8009fcd446a50438cab7a",
+      "mk3Operation": "planInput: *.psa and the sidecars by name (spec.companions)"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#actorXTextureAnimation+actorXVertexAnimationTexture",
+      "verdict": "identical",
+      "resultDigest": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a",
+      "mk3Operation": "not carried as animation: flipbook, pan and VAT stay material parameters (integrator decision 2026-09-26)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "b4703318bc64095c75a5e5f431a40cea44d94c9a93c1f7988a6ac1edf471c3ec",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "daf112d8f5319ac8dc383de89c384b849a0fe8b0e3898f74bdc5d1f0fda21e91",
+      "mk3Operation": "common.view/model-scene-source, model.export-uvm"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-actorx/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-actorx.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/implementation.ts#isUnrealActorX+isUnrealActorXPsk+isUnrealActorXPsa",
+        "mk2-source:src/implementation.ts#parseUnrealActorXPskRenderModel",
+        "mk2-source:src/implementation.ts#parseActorXPsk (skin, bind pose, VTXNORMS, VERTEXCOLOR, EXTRAUV, morphs)",
+        "mk2-source:src/implementation.ts#parseUnrealActorXPsaRenderModel",
+        "mk2-source:src/implementation.ts#parseUnrealActorXRenderModel (PSA companions, material and animation sidecars)",
+        "mk2-source:src/implementation.ts#actorXTextureAnimation+actorXVertexAnimationTexture",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

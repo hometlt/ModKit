@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/relic at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/relic/codec.manifest.json",
+        "sha256LF": "de81a5a53ddef9da6e0467e8f782853fc9bd004cf2f74faeee1f412198bbc407"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/relic/src/index.ts",
+        "sha256LF": "cc10bf15edb517e486d18fadce8afc094776ce6e0f1d061c07e7435166f81556"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:default relicCodec",
+      "verdict": "identical",
+      "resultDigest": "0f50a2cfea7319c8e4117d9c7de99823751a3f281d151e1436d37975579e8cdd",
+      "mk3Operation": "common.view/namespace-entry-source, container.extract"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "52db9655e94892dfa3c97bce28a57e946123da04267f8fd845b2091c3a039d16",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:default relicCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

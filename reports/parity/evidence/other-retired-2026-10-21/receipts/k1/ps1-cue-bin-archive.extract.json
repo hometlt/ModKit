@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "codec": "ps1-cue-bin",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "MK2 buildCueBinEntries: tracks/track01.bin is the raw track and tracks/track01.iso its 2048-byte user data, for MODE1/2048 the BIN itself",
+    "suite": "modkit-extensions-other/test/behavior/k1-ps1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.cue",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.cue",
+        "sha256": "0275df3739df461a6c6283fd40103f6be7baefa8ae5ac90d01587398f7821615"
+      },
+      {
+        "name": "minimal.bin",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.bin",
+        "sha256": "78bd63af24b3f3695d14689a7566c66bffd1393f4657ce89ccbfc1c51e7b5b65"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.cue+minimal.bin:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ec562a8079ab96805567a0c592742e5c8a38af233f3f71ca6b126e1153468542",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-cue-bin.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.cue+minimal.bin:container.extract"]
+    }
+  ]
+}

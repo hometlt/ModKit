@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-iostore",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unreal.utoc",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.utoc",
+        "sha256": "14006229f5cfab93f37331a7a4d2e4d1ae46f9723ef9ebc967d61c97543ade8a"
+      },
+      {
+        "name": "minimal.unreal.ucas",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.ucas",
+        "sha256": "150e5d444dc9001640f232bca39ec6a797df557a3500f4eb55c05410a7e38247"
+      },
+      {
+        "name": "minimal.unreal.pak",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.pak",
+        "sha256": "dd0928ff87ca30fd91378f272b8271587acb36c95741463c3eedc70f2f0058be"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/codec.manifest.json",
+        "sha256LF": "aa3960299ed631e08d00be7e2f9a3abd21793ea46336040b93c69b0ff16280d7"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/detect.ts",
+        "sha256LF": "e2d69321d1f73f6d611f8497ca04010850586ab747987456c42c66a222050839"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/index.ts",
+        "sha256LF": "b42dbfdce9d63f8f8b7f7a3bfb15cf2114fbe5507f00bd46df3e40ac81903e1d"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/src/real.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/real.ts",
+        "sha256LF": "31ea78dc048074a72c89cdf5aacfd131830d8018cf2d1bc414532b078d1653ce"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/src/oodle-native.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
+        "sha256LF": "668e779703afa627ac4db5426123738e23a13ae561bec1f5ba878ad99a0b4330"
+      },
+      {
+        "name": "mk2 codecs/unreal-iostore/src/oodle-wasm.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
+        "sha256LF": "630adf68093d3824284705f2cb6d005ca394daac904500d47c07a102e6034ac9"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts#detectHeader+src/index.ts#isUnrealIoStore+src/real.ts#isRealUnrealIoStoreToc",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "unreal-iostore/iostore.ts isIoStoreToc"
+    },
+    {
+      "id": "mk2-source:src/real.ts#parseRealUnrealIoStoreHeader",
+      "verdict": "identical",
+      "resultDigest": "e7f6c011776e8db7cd330b54174fd76f7d0216b612387a5ffcfb81e6f0919683",
+      "mk3Operation": "unreal-iostore/iostore.ts parseIoStoreHeader"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseUnrealIoStoreToc+src/real.ts#parseRealUnrealIoStoreToc",
+      "verdict": "identical",
+      "resultDigest": "d1892a90b10c2cade03d1de5ef12095d68de6427ee8acbb98b756060bf9ab4ac",
+      "mk3Operation": "unreal-iostore/iostore.ts readIoStoreIndex (namespace-entry-source)"
+    },
+    {
+      "id": "mk2-source:src/real.ts#readRealUnrealIoStoreEntry+RealUnrealIoStoreReader",
+      "verdict": "identical",
+      "resultDigest": "647b6ad23fc1dca847bdbe66c2f2c2926d82e37135370e83cd83ef8fe5c52f76",
+      "mk3Operation": "container entries (S3) opened by the host (container.extract)"
+    },
+    {
+      "id": "mk2-source:src/real.ts#parseUnrealIoStoreAesKey+decryptUnrealIoStoreAes",
+      "verdict": "identical",
+      "resultDigest": "60d4ef4924d4d4c8283fdb593014602c5e031bd8779a4deecf5d6df77cea5d3a",
+      "mk3Operation": "shared/keys.ts keyRingFromSettings (aesKey/aesKeys settings) + codec-kit crypto/aes"
+    },
+    {
+      "id": "mk2-source:src/oodle-wasm.ts#createOodleWasmDecompressor",
+      "verdict": "identical",
+      "resultDigest": "c27e8ba8826ed0c635d8bdf3c973e6f1c47fdc82d3ef21bae3bedb3d0a8883bf",
+      "mk3Operation": "shared/oodle.ts: the optional rad/oodle provider of common.compression/oodle-decoder@1 (owner decision 2026-09-26)"
+    },
+    {
+      "id": "mk2-source:src/oodle-native.ts#setOodleDllPath+createOodleDecompressor",
+      "verdict": "identical",
+      "resultDigest": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "mk3Operation": "not carried: no native oo2core DLL is loaded (owner decision 2026-09-26: the GPL rad/oodle extension)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "15a3abe00c716b37575b5c757235f2979bd109e1b5268d5085b763979fb48e4e",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "edf0e851feeb98a917b32d2c1f9a9e8f2f934f4fdd00d136c6abdac06671d6cf",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-iostore/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts#detectHeader+src/index.ts#isUnrealIoStore+src/real.ts#isRealUnrealIoStoreToc",
+        "mk2-source:src/real.ts#parseRealUnrealIoStoreHeader",
+        "mk2-source:src/index.ts#parseUnrealIoStoreToc+src/real.ts#parseRealUnrealIoStoreToc",
+        "mk2-source:src/real.ts#readRealUnrealIoStoreEntry+RealUnrealIoStoreReader",
+        "mk2-source:src/real.ts#parseUnrealIoStoreAesKey+decryptUnrealIoStoreAes",
+        "mk2-source:src/oodle-wasm.ts#createOodleWasmDecompressor",
+        "mk2-source:src/oodle-native.ts#setOodleDllPath+createOodleDecompressor",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

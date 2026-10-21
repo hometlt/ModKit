@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth2160-model",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "model.render",
+    "oracle": "the synthetic KFR and SKN exported by the codec's own model.export-uvm and drawn by the core UVM codec's model.render, both as the host runs them",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth2160-receipts.test.ts",
+    "samples": [
+      {
+        "name": "Fixture.kfr",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedKfr",
+        "sha256": "47117a0a6de13e55d10c6840e94dd9b9edf17e010754fbd3099f4baf8c29ba14"
+      },
+      {
+        "name": "Fixture.skn",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedSkn",
+        "sha256": "60cb3ddc76224179528eb7f1fe4b5c98d871c7215fdf99ba7d22a98caaaf9844"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:Fixture.kfr:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "68f20225212e46b5cad641f4ccd407ce56dc06de1d766cf04128d50aaa2fbc6c",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:Fixture.kfr:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    },
+    {
+      "id": "synthetic:Fixture.skn:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "68f20225212e46b5cad641f4ccd407ce56dc06de1d766cf04128d50aaa2fbc6c",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:Fixture.skn:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth2160-model/operation/model.render",
+      "kind": "operation",
+      "legacyOperation": "model.render",
+      "adapterOperation": "model.render",
+      "targetOperation": "model.render",
+      "handlerId": "render-uvm-scene",
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:Fixture.kfr:model.export-uvm",
+        "synthetic:Fixture.kfr:model.export-uvm:model.render",
+        "synthetic:Fixture.skn:model.export-uvm",
+        "synthetic:Fixture.skn:model.export-uvm:model.render"
+      ]
+    }
+  ]
+}

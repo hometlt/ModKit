@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-mesh",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "model.render",
+    "oracle": "the MKXUNITYMESH sample exported by the codec's own model.export-uvm and drawn by the core UVM codec's model.render, both as the host runs them",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-model-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unitymesh",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unitymesh",
+        "sha256": "5cfafa5280ffa28948891e6c232152467057257b487f1c111b2f7f31d1bcf0d8"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unitymesh:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "63ca5e665c86aa25ebe93c527330cea53c9725277ba14c0e27edb42bc425acf4",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:minimal.unitymesh:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-mesh/operation/model.render",
+      "kind": "operation",
+      "legacyOperation": "model.render",
+      "adapterOperation": "model.render",
+      "targetOperation": "model.render",
+      "handlerId": "render-uvm-scene",
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unitymesh:model.export-uvm",
+        "synthetic:minimal.unitymesh:model.export-uvm:model.render"
+      ]
+    }
+  ]
+}

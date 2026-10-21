@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "codec": "ps1-xa",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/common/archives/codecs/ps1-xa at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-ps1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "DATA.XA",
+        "builder": "modkit-extensions-other/test/behavior/ps1-fixtures.ts#xa"
+      },
+      {
+        "name": "DATA.FAT",
+        "builder": "modkit-extensions-other/test/behavior/ps1-fixtures.ts#westwoodFat"
+      },
+      {
+        "name": "minimal.xa",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.xa",
+        "sha256": "763b7eca229d9c5cf4b5068d6fa78a2518347d3847fc8741301d45761d0e098d"
+      },
+      {
+        "name": "mk2 codecs/ps1-xa/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/common/archives/codecs/ps1-xa/codec.manifest.json",
+        "sha256LF": "2f5d2a7cebb3ea90db1085a83ee3f7bd3f425b2333434965a6d84c2d949bd616"
+      },
+      {
+        "name": "mk2 codecs/ps1-xa/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/common/archives/codecs/ps1-xa/src/index.ts",
+        "sha256LF": "975a1b55d4d78c00223d71514a3eef8c891e703c0989bb7f271a00c6a33c519f"
+      },
+      {
+        "name": "mk2 codecs/ps1-xa/src/ps1-fat.ts",
+        "fixture": "references/modkitmk2/extensions/common/archives/codecs/ps1-xa/src/ps1-fat.ts",
+        "sha256LF": "6aef8831a489c1f5301e8e6675b4f0b707f3708e2e834b57cbedc602e3b3593c"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/ps1-fat.ts#Ps1FatEntry+Ps1FatArchive+parsePs1Fat+buildEntry",
+      "verdict": "identical",
+      "resultDigest": "20a0d3efb3c1f24ec2f6c644111189d80fa9ca35655568fddfc2c9f553ce7a64",
+      "mk3Operation": "ps1-xa/xa.ts readFat"
+    },
+    {
+      "id": "mk2-source:src/ps1-fat.ts#isPs1Fat+isPlausibleFatName",
+      "verdict": "identical",
+      "resultDigest": "8c1045047cc272ec4090ae752d5fd91fa5c21184e9c3d3c2b9e7821655ad4b61",
+      "mk3Operation": "ps1-xa/xa.ts readFat refuses an implausible name and a DATA.MIX count the records do not make"
+    },
+    {
+      "id": "mk2-source:src/ps1-fat.ts#openPs1FatReader(xa)+ps1XaCodec.open",
+      "verdict": "identical",
+      "resultDigest": "f76284b7a101facab8fad8291e27172cf5d100b4c5b544b732c443194556bd00",
+      "mk3Operation": "container.extract of the FAT entries, by ranges; the DATA.MIX half is the DATA.MIX codec's (MK2 westwood-mix-ps1), not this one's"
+    },
+    {
+      "id": "mk2-source:src/ps1-fat.ts#describePs1Fat+ps1XaCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "5c22117178f81d74b80253eb69dfe8527ab26288d8ba67d097c2a697197f6ef2",
+      "mk3Operation": "view.inspect with the FAT bound"
+    },
+    {
+      "id": "mk2-source:src/ps1-fat.ts#readSiblingFat+hasSiblingFat+readSibling+siblingPath",
+      "verdict": "identical",
+      "resultDigest": "77875282da965d098b0f20fc6b19e9628fa122bbeba62bd472d1af383be307b7",
+      "mk3Operation": "spec.companions: the host binds <stem>.fat or .FAT. MK2's fallback to DATA.FAT beside any other XA is not carried: a FAT indexes DATA.XA, so SCORE.XA opens by its streams"
+    },
+    {
+      "id": "mk2-source:src/index.ts#ps1XaCodec.describe(archive-companion-missing)",
+      "verdict": "identical",
+      "resultDigest": "c98d570c53eb7d093024e27fe3ecae3eb6264d1c08cffa6e6cf30b0f4880b0f6",
+      "mk3Operation": "without a FAT MK2 described only 'archive-companion-missing: fat'; MK3 lists the file's streams"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "d4eeedc2e2bfb7b059f5bf5b7e5af291d0fff008349c5edc5e827e3633fe5a8c",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "35487127675987735b139e0799748342090f643ec0286dae72cae5cc6a741318",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ps1-xa/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/ps1-fat.ts#Ps1FatEntry+Ps1FatArchive+parsePs1Fat+buildEntry",
+        "mk2-source:src/ps1-fat.ts#isPs1Fat+isPlausibleFatName",
+        "mk2-source:src/ps1-fat.ts#openPs1FatReader(xa)+ps1XaCodec.open",
+        "mk2-source:src/ps1-fat.ts#describePs1Fat+ps1XaCodec.describe",
+        "mk2-source:src/ps1-fat.ts#readSiblingFat+hasSiblingFat+readSibling+siblingPath",
+        "mk2-source:src/index.ts#ps1XaCodec.describe(archive-companion-missing)",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

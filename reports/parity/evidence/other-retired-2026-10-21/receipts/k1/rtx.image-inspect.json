@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "rtx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the size, image count and encoding written into the synthetic texture",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:red.rtx:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "32125ab2da6dd3c3ff9bc2a3db1c977433a8141312aaaddddae5f65850ff594c",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:red.rtx:view.inspect"
+      ]
+    }
+  ]
+}

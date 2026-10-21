@@ -10,7 +10,6 @@ export const algorithmRepositories = [
   'modkit-core',
   'modkit-extensions-blizzard',
   'modkit-extensions-ea',
-  'modkit-extensions-other',
   'modkit-extensions-annihilation',
   'modkit-extensions-warzone',
 ]

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "codec": "heroes3-lod",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "H3bitmap.lod",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#lod"
+      },
+      {
+        "name": "Heroes3.snd",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#snd"
+      },
+      {
+        "name": "Sounds.snd",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#snd"
+      },
+      {
+        "name": "VIDEO.VID",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#vid"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:H3bitmap.lod:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "11b51d2cb9b24beeb6d50af6133ae51c8b63124a3a94b641d7bc096ab723d39b",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:Heroes3.snd:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "55300cce0d01742f5c7c5346f26cf70ebe723c3152be548d5ff1d75d11e92c85",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:Sounds.snd:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "fda12384f3a6a7f3b02d84696b04deaf05f217992a64812f952c05e64750c00e",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:VIDEO.VID:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "8c9bb697b15209c8239a965f9e37fb75e5d79c40d81e31ce7ca319ffbae98aca",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:H3bitmap.lod:view.inspect",
+        "synthetic:Heroes3.snd:view.inspect",
+        "synthetic:Sounds.snd:view.inspect",
+        "synthetic:VIDEO.VID:view.inspect"
+      ]
+    }
+  ]
+}

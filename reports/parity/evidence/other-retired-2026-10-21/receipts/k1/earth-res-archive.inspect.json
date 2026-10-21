@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-res",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-receipts.test.ts",
+    "samples": [
+      {
+        "name": "unknown.res",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#res(3)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:unknown.res:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "90475b45f7ecb6b973f3f1d194379ee2ae9f502342a8bb7b108003034f1ffcd1",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-res.json",
+      "executed": true,
+      "caseIds": ["synthetic:unknown.res:view.inspect"]
+    }
+  ]
+}

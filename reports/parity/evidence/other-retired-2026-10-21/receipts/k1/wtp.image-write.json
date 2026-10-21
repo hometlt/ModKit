@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "codec": "wtp",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "common.edit/writer",
+    "oracle": "the texels written over the sample through the host's resolved rgba8 writer, read back exactly as the base image; the chunk tree MK2's encode wrote",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "default.wtp",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#wtpSample",
+        "sha256": "cc87b4cb63a5eb4c138ec9a974e5317682b47516bb7e74d890af61bc88f94c1b"
+      },
+      {
+        "name": "texels-3x2.rgba",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#TEXELS",
+        "sha256": "d1fcf49e63411318397a9ad7ba4882e07282fa179e0a1a0616048dbf2169c0a8"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:default.wtp+texels-3x2.rgba:writer",
+      "verdict": "identical",
+      "resultDigest": "4c8bc347509e760842b8535b329b4b5264c8cba9801090fdec0f0421ae0d8aed",
+      "mk3Operation": "common.edit/writer@1 resolved by the facet of the opened subject"
+    },
+    {
+      "id": "synthetic:default.wtp+texels-3x2.rgba:chunk-tree",
+      "verdict": "identical",
+      "resultDigest": "6c92f4c97550c8dea9ae482dd88e659886c23141966e99520a00397e78695cb6",
+      "mk3Operation": "the committed file"
+    },
+    {
+      "id": "synthetic:default.wtp+texels-3x2.rgba:read-back",
+      "verdict": "identical",
+      "resultDigest": "685de585b7229520510a131066263b975dae084f2e16cbe20ea458bd86daf974",
+      "mk3Operation": "view.inspect and common.view/raster-image-source of the committed file"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wtp/operation/image.write",
+      "kind": "operation",
+      "legacyOperation": "image.write",
+      "adapterOperation": "common.edit/writer",
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "wtp-rgba8-encoder"
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:default.wtp+texels-3x2.rgba:writer",
+        "synthetic:default.wtp+texels-3x2.rgba:chunk-tree",
+        "synthetic:default.wtp+texels-3x2.rgba:read-back"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "fsb",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "MK2 describeFsb5/parseFsb5 on the sample: FSB5 version 1, codec pcm8, one stream, 8 bytes of sample headers, 9 of names, 32 of audio",
+    "suite": "modkit-extensions-other/test/behavior/k1-fmod-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.fsb",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.fsb",
+        "sha256": "7e33e52028fd5b49b54ff447f0be3bf5487bff1e57872d343303114081ea12a9"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.fsb:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "8d05fb0fd2dfa59ad509130af58e1e63071b6b2c451dd0dfc9049b66295850c8",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
+      "kind": "operation",
+      "legacyOperation": "audio.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.fsb:view.inspect"]
+    }
+  ]
+}

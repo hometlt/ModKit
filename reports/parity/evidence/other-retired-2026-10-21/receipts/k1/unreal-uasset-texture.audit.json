@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset-texture",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.texture2d.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.texture2d.uasset",
+        "sha256": "4b314fe1cb2a707457b4ae2d64eed4e7200cc85fa8417eaa9e222655e05f7a77"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-texture/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/codec.manifest.json",
+        "sha256LF": "a7eedc2735b11104880a6e52bf4286f8e7ac0e87713f7fd08ed4e62c47f4e562"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-texture/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
+        "sha256LF": "6dd6ae38563b37c8e84fc51958d42807f426db92bb8fd98df9198523028d0a39"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-texture/src/implementation.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
+        "sha256LF": "e011ccf172f474f52698c910c3e18b0f31f0d695dfe09738fef938821dc54ad2"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/implementation.ts#decodeUnrealPixelPayload",
+      "verdict": "identical",
+      "resultDigest": "0ec0601817fa74f6695ec073ac0d6645d3ea5202ed8f144591e49757f0dae23e",
+      "mk3Operation": "unreal-uasset-texture/texture-codec.ts TEXTURE_PIXEL_FORMATS (codec-kit texture/bc, texture)"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#describeUasset+decodeUasset+parseCookedTexturePayload",
+      "verdict": "identical",
+      "resultDigest": "337f189bb5c2b4eca12265756d370b0ef33c0f7623504ec8ff0fec0e82d94a43",
+      "mk3Operation": "view.inspect and view.raster-image-source"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#resolveUnrealSiblings",
+      "verdict": "identical",
+      "resultDigest": "5688c2befdd9e464b7f39d09260bb8a933b0c9876d0f4139d59b458bcc7ef82d",
+      "mk3Operation": "spec.companions (the host binds <name>.uexp and <name>.ubulk; mips in the .ubulk)"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#describeUnrealSidecar+decodeUnrealSidecar",
+      "verdict": "identical",
+      "resultDigest": "0624e48330873bb63536d2dfa2ab235e7705e8c75ddde3dfd28b22ba2ac7f98e",
+      "mk3Operation": "not carried: a .uexp or .ubulk opens with its package as a companion, not alone"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "859a2a110fac7a2da278d8de4933951412a3c70a7dc370a096fee3efd6d547df",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "83ee55a4b24c2f14b10b45e3a95b28fc4ddb71909c490c2cba4fd61603b9af4e",
+      "mk3Operation": "view.inspect, common.view/raster-image-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset-texture/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/implementation.ts#decodeUnrealPixelPayload",
+        "mk2-source:src/implementation.ts#describeUasset+decodeUasset+parseCookedTexturePayload",
+        "mk2-source:src/implementation.ts#resolveUnrealSiblings",
+        "mk2-source:src/implementation.ts#describeUnrealSidecar+decodeUnrealSidecar",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

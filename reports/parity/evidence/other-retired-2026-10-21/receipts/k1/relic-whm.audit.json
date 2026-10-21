@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-whm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/models/codecs/relic-whm at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "marine.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whm",
+        "sha256": "bdbd9d220e5ba637ec8e71ff80c69c8f6e8cce8caa292ba34abd908650c49fdb"
+      },
+      {
+        "name": "marine_walk.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whmWithAnimation",
+        "sha256": "7d46a8728a0a07dd7a616cc5e55d4566d785c7ea660a2298630cd556e12c14d0"
+      },
+      {
+        "name": "marine_intro.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whmWithCamera",
+        "sha256": "0424d6a2b5c9846919055ca3693729b19ff8d873ca8ac288ba41e5d8c3b2bb78"
+      },
+      {
+        "name": "marine_parts.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whm(parts)",
+        "sha256": "268e3d95ec06421cd880867a3299c4a63e7c74dc19fb20d471ae79ff44856200"
+      },
+      {
+        "name": "art/ebps/gun.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#gunSample",
+        "sha256": "f8642efbca606f704be1da9ac23211f638a3eea7bcee863b351f4a545bdd7014"
+      },
+      {
+        "name": "marine.whe",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whe",
+        "sha256": "b9b859fb01ddc5452f3c1ebbeb2ac33bb7ea9f60b2682184eef198cade244d12"
+      },
+      {
+        "name": "sgm_marine.sgm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#sgmSample",
+        "sha256": "deccf8195bce5411593fbc71a3ec7615b0137afed73bd877d2c171ee23ed0f89"
+      },
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      },
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      },
+      {
+        "name": "attrib.v2.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(2, SGA_FILES)",
+        "sha256": "1aeb16e8cf425b9d6c4304921a1c8571a4b49bdda68d1095d796bc900a70a4bf"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/codec.manifest.json",
+        "sha256LF": "72bc1ffb286e53a00a11bcdcbbc1dc157734623540ec5f38ae98d33923b13785"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/src/detect.ts",
+        "sha256LF": "3f12dcbe5541f0979f4657f5bbf4e869cfcbc487902d761c54c181598d4b4865"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/src/index.ts",
+        "sha256LF": "a3eb61fc824c60793bd30d094f3e1b86c3fbcc7c6c219464bf448e752c0aff4d"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "05c89d55675f17674d49a84fa240cb36630749085c7efa71243a9a98c614d8a2",
+      "mk3Operation": "probe (relic-whm manifest probe plan) over marine.whm, sgm_marine.sgm, model.whm, red.rtx, attrib.v2.sga"
+    },
+    {
+      "id": "mk2-source:parseRelicWhmRenderModel+relicWhmModelCodec",
+      "verdict": "identical",
+      "resultDigest": "252f2623df244b74cb6a54e1942030a55bbf072141e04843978cd36aed77a356",
+      "mk3Operation": "view.inspect, model-skeleton-source, model-material-source, model-resource-refs-source"
+    },
+    {
+      "id": "mk2-source:RelicWhmMarker",
+      "verdict": "identical",
+      "resultDigest": "a364a38f63d14fa36794de5a42b3ec14e81766f6d0214f9303d9c8be2335809c",
+      "mk3Operation": "model-socket-source, model-scene-source"
+    },
+    {
+      "id": "mk2-source:RelicWhmCamera",
+      "verdict": "identical",
+      "resultDigest": "ec225d64124ed931e4902ba769c37feb385067e3d76b140777d339eb8d78b6c1",
+      "mk3Operation": "model-camera-source"
+    },
+    {
+      "id": "mk2-source:parseRelicWhmRenderModel:animations",
+      "verdict": "identical",
+      "resultDigest": "ea3681e0c129fe670ca1244b6cd2ee9b04100e500afee5b1c7aa6af25e26762e",
+      "mk3Operation": "model-animation-source"
+    },
+    {
+      "id": "mk2-source:parseRelicWhmRenderModel:camera-tracks",
+      "verdict": "identical",
+      "resultDigest": "88ca4f8763c60b978a539f5953051657f2351d0f023c38d218998fef73ba9869",
+      "mk3Operation": "model-animation-source"
+    },
+    {
+      "id": "mk2-source:parseRelicWheBehavior+RelicWheBehavior+RelicWheEvent+RelicWheClause+RelicWheMotion+RelicWheAction+RelicWheActionBranch+RelicWhmAnimationReference",
+      "verdict": "identical",
+      "resultDigest": "63421e0a35a94223dadcd65120cc3cfa92a0178805ac5dcc0df3c7f5a6deacc4",
+      "mk3Operation": "relic-whm/whe.ts parseWhe"
+    },
+    {
+      "id": "mk2-source:parseRelicWhmRenderModelAsync",
+      "verdict": "identical",
+      "resultDigest": "cadc2e79bf96935ddc36f3665eb7d983f9257e6924f5748924ab4b1306b6944b",
+      "mk3Operation": "view.inspect with the logical resources of the host, model-scene-source"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "52db9655e94892dfa3c97bce28a57e946123da04267f8fd845b2091c3a039d16",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "6cf4933dbfa3a4844248e64fe4026e27670b4fb9cfb4129e680dd41e054102d8",
+      "mk3Operation": "common.view/model-scene-source, model.render (modkit/model-uvm)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-whm/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-whm.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:parseRelicWhmRenderModel+relicWhmModelCodec",
+        "mk2-source:RelicWhmMarker",
+        "mk2-source:RelicWhmCamera",
+        "mk2-source:parseRelicWhmRenderModel:animations",
+        "mk2-source:parseRelicWhmRenderModel:camera-tracks",
+        "mk2-source:parseRelicWheBehavior+RelicWheBehavior+RelicWheEvent+RelicWheClause+RelicWheMotion+RelicWheAction+RelicWheActionBranch+RelicWhmAnimationReference",
+        "mk2-source:parseRelicWhmRenderModelAsync",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

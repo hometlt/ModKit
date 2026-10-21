@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "codec": "petroglyph-meg",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the table written into each synthetic archive of formats 1-3 and the encrypted one",
+    "suite": "modkit-extensions-other/test/behavior/k1-petroglyph-receipts.test.ts",
+    "samples": [
+      {
+        "name": "format1.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 1 })",
+        "sha256": "675b7cd4fc2bb521fe5883e502ebc7d473b9d298ceaa050934b07894b2f9003a"
+      },
+      {
+        "name": "format2.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 2 })",
+        "sha256": "0c724866a8252ee46be0914bf32fe20fbf79f7d25f837f6045a2a86dfd84213c"
+      },
+      {
+        "name": "format3.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 3 })",
+        "sha256": "e1814a517fe26f800f1e195bd43eb0cb9650014681804ca9748ea88fc159ac57"
+      },
+      {
+        "name": "grey-goo-encrypted.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES with flags 1, { encrypted: true })",
+        "sha256": "d6c182257157eef83d9074621807fe15c1b0955758475f5646ca56f3a4266e4d"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:format1.meg:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "516d38cc771a4c0bf5fb8c777b8662e517f7b7f66de97f94d573ef7975025a7d",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:format2.meg:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "570a4f94b792df4c47ac0c3cefa4e71f6bd310e3c346616f87627c1bfbf49a42",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:format3.meg:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "5d5b4ced7d00c29ac16f91987f52248eaa2a0acecf391cf11d7cc3ff611ee654",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:grey-goo-encrypted.meg:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "a87ebfb3764f6a12665a9707926508f38610f334fe574af23865ef12a88483d2",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:format1.meg:view.inspect",
+        "synthetic:format2.meg:view.inspect",
+        "synthetic:format3.meg:view.inspect",
+        "synthetic:grey-goo-encrypted.meg:view.inspect"
+      ]
+    }
+  ]
+}

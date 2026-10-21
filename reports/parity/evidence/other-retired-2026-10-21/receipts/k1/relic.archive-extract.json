@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "MK2's entry layout of the chunk tree, the DATA payload and its printable strings as written",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:model.whm:listing",
+      "verdict": "identical",
+      "resultDigest": "f9f557e3ba8ee02812e123109cc8efd8a2d9c89d2934d3cafebad50adffee74b",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:model.whm:000_FOLDRSGM_model/000_DATAINFO_info_block/payload.bin:container.extract",
+      "verdict": "identical",
+      "resultDigest": "5f7a3ea2b2a6eb4254e48d3eac966c4f628ae4e5cf2d5eb4de1a35fbf1303abd",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:model.whm:000_FOLDRSGM_model/000_DATAINFO_info_block/strings.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "6ea5d298983b9cf2df28df046c2775c1eefac3e0206e0b149ae000bd703642aa",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:model.whm:chunky-summary.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9f76d70254f49c779e601e35f09b3af29c210bd199636d25f44e8fbf1b51b139",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:model.whm:listing",
+        "synthetic:model.whm:000_FOLDRSGM_model/000_DATAINFO_info_block/payload.bin:container.extract",
+        "synthetic:model.whm:000_FOLDRSGM_model/000_DATAINFO_info_block/strings.txt:container.extract",
+        "synthetic:model.whm:chunky-summary.txt:container.extract"
+      ]
+    }
+  ]
+}

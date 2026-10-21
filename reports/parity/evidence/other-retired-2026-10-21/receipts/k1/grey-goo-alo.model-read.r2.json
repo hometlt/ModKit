@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "codec": "grey-goo-alo",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the skeleton, meshes (collision shell left out), UVs, skin palette and texture names written into the synthetic model in both chunk size modes, read as MK2 read them",
+    "suite": "modkit-extensions-other/test/behavior/k1-petroglyph-receipts.test.ts",
+    "samples": [
+      {
+        "name": "unit.alo",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#greyGoo(ALO_MODEL)",
+        "sha256": "30b3d12ed722f24e49a7281ffa78417d914fd303e850ab02663b9a448760c4dd"
+      },
+      {
+        "name": "unit-eaw.alo",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#empireAtWar(ALO_MODEL)",
+        "sha256": "ff80a155126a9e2ade01915cdffcc2a93d1643714c30d8a7ae34e496099b369a"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:unit.alo:info",
+      "verdict": "identical",
+      "resultDigest": "d0aa70f4a4c41696cfd29ea0804b98a4f154282add4ca19724858303f151baf8",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit.alo:nodes",
+      "verdict": "identical",
+      "resultDigest": "dd9ef69a4f315ad932e638c2c5f0d56c32c60a8e2de227d61b9c1ba14fc85d5b",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit.alo:mesh:0/submesh:0",
+      "verdict": "identical",
+      "resultDigest": "5acf73f855ecec9f46b21ad258160b33be2e33717cd6bdf2082825c87a32ed3c",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit.alo:skin",
+      "verdict": "identical",
+      "resultDigest": "d7354a5ba68ea28c3e750d78b518f76864c8911cd0fac8ae2fc58712ca31a155",
+      "mk3Operation": "common.view/model-scene-source, common.view/model-skeleton-source"
+    },
+    {
+      "id": "synthetic:unit.alo:textures",
+      "verdict": "identical",
+      "resultDigest": "1c6f3b312639f5686cb593af0cb7097d39826027e582d3b48e0b9e1b3077ca99",
+      "mk3Operation": "common.view/model-resource-refs-source"
+    },
+    {
+      "id": "synthetic:unit-eaw.alo:info",
+      "verdict": "identical",
+      "resultDigest": "d0aa70f4a4c41696cfd29ea0804b98a4f154282add4ca19724858303f151baf8",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit-eaw.alo:nodes",
+      "verdict": "identical",
+      "resultDigest": "dd9ef69a4f315ad932e638c2c5f0d56c32c60a8e2de227d61b9c1ba14fc85d5b",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit-eaw.alo:mesh:0/submesh:0",
+      "verdict": "identical",
+      "resultDigest": "5acf73f855ecec9f46b21ad258160b33be2e33717cd6bdf2082825c87a32ed3c",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:unit-eaw.alo:skin",
+      "verdict": "identical",
+      "resultDigest": "d7354a5ba68ea28c3e750d78b518f76864c8911cd0fac8ae2fc58712ca31a155",
+      "mk3Operation": "common.view/model-scene-source, common.view/model-skeleton-source"
+    },
+    {
+      "id": "synthetic:unit-eaw.alo:textures",
+      "verdict": "identical",
+      "resultDigest": "1c6f3b312639f5686cb593af0cb7097d39826027e582d3b48e0b9e1b3077ca99",
+      "mk3Operation": "common.view/model-resource-refs-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:unit.alo:info",
+        "synthetic:unit.alo:nodes",
+        "synthetic:unit.alo:mesh:0/submesh:0",
+        "synthetic:unit.alo:skin",
+        "synthetic:unit.alo:textures",
+        "synthetic:unit-eaw.alo:info",
+        "synthetic:unit-eaw.alo:nodes",
+        "synthetic:unit-eaw.alo:mesh:0/submesh:0",
+        "synthetic:unit-eaw.alo:skin",
+        "synthetic:unit-eaw.alo:textures"
+      ]
+    }
+  ]
+}

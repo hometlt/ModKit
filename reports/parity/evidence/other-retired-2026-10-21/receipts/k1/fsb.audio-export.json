@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "codec": "fsb",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "export.convert",
+    "oracle": "MK2 exportFsb5 { target: 'wav', streamIndex }: encodePcm16Wav of the decoded stream, here the FADPCM samples 94, 87 and the second PCM16 stream's frame 7, 8",
+    "suite": "modkit-extensions-other/test/behavior/k1-fmod-receipts.test.ts",
+    "samples": [
+      {
+        "name": "fadpcm.fsb",
+        "builder": "modkit-extensions-other/test/behavior/fmod-fixtures.ts#fsb5(0x10) + fadpcmFrame"
+      },
+      {
+        "name": "pcm16.fsb",
+        "builder": "modkit-extensions-other/test/behavior/fmod-fixtures.ts#fsb5(0x02)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:fadpcm.fsb:export.convert",
+      "verdict": "identical",
+      "resultDigest": "7c665dc81228ff1d6820f25147d3af47598114711d6fdce7ebbcad32f3c55b0d",
+      "mk3Operation": "export.convert { target: 'wav' }"
+    },
+    {
+      "id": "synthetic:pcm16.fsb:stream-1:export.convert",
+      "verdict": "identical",
+      "resultDigest": "715fee2adba3140f7822a419b34ed947ea75b347b88e0d18112951448f502225",
+      "mk3Operation": "export.convert { target: 'wav', stream: 1 }"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
+      "kind": "operation",
+      "legacyOperation": "audio.export",
+      "adapterOperation": "export.convert",
+      "targetOperation": "export.convert",
+      "handlerId": "convert-audio",
+      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:fadpcm.fsb:export.convert",
+        "synthetic:pcm16.fsb:stream-1:export.convert"
+      ]
+    }
+  ]
+}

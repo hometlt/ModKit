@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "wtp",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the size, image count and encoding written into the synthetic texture",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "default.wtp",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#wtpSample",
+        "sha256": "cc87b4cb63a5eb4c138ec9a974e5317682b47516bb7e74d890af61bc88f94c1b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:default.wtp:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "1a48304a7f5b8de60fccddfc2b5af6a79ccf6738511f8ce214c383992abcdd61",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-wtp.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:default.wtp:view.inspect"
+      ]
+    }
+  ]
+}

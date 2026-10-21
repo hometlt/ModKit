@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-par",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-audits.test.ts",
+    "samples": [
+      {
+        "name": "EARTH2150.par",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE, 3)",
+        "sha256": "cb08e1cef1aa558e34ad474ab3be7abe77feb0a682a35bac5a63838cc5099770"
+      },
+      {
+        "name": "every-record.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#wd",
+        "sha256": "4380c7418d28be7f38ee84408395724722dfbd13dca66ead2772f4ddcdd43eb0"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par/codec.manifest.json",
+        "sha256LF": "e1933ef684e08235416109148c86fb02b08166064b5afd33d46cef3b3c697bc9"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par/src/index.ts",
+        "sha256LF": "9c001003686fa3b855fe1684ff348078a1adc9f3853117d0f40d5ee713562fbe"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isEarthPar",
+      "verdict": "identical",
+      "resultDigest": "9554bae5dc952cf1b6ef07cd670fe536cc0b529cb07d3ebbb65b1f351ba0df00",
+      "mk3Operation": "earth-par/par.ts isEarthPar"
+    },
+    {
+      "id": "mk2-source:parseEarthPar+EarthParDatabase+EarthParEntityGroup+EarthParEntity+EarthParField+EarthParIntegerField+EarthParStringField+EarthParPaddingField+EarthParResearch",
+      "verdict": "identical",
+      "resultDigest": "0b9ccbb93099ce9e9d37b9134c6809ae57a7229d12195bb3647e49599c7ae156",
+      "mk3Operation": "earth-par/par.ts parseEarthPar"
+    },
+    {
+      "id": "mk2-source:default earthParCodec",
+      "verdict": "identical",
+      "resultDigest": "93b88725016187a6a17fd1d05960a2ef8159e25437cf4551e03b46f44129adf0",
+      "mk3Operation": "view.inspect, common.view/namespace-entry-source, container.extract"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "aacd4b95fa005c511843b21a90887e00367d0c7c72a9af89f3b18887b1a94cb3",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    },
+    {
+      "id": "mk3-manifest:container.extract",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "spec.operations"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-par/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isEarthPar",
+        "mk2-source:parseEarthPar+EarthParDatabase+EarthParEntityGroup+EarthParEntity+EarthParField+EarthParIntegerField+EarthParStringField+EarthParPaddingField+EarthParResearch",
+        "mk2-source:default earthParCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations",
+        "mk3-manifest:container.extract"
+      ]
+    }
+  ]
+}

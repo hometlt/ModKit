@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "codec": "supcom-scm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-supcom-receipts.test.ts",
+    "samples": [
+      {
+        "name": "UEL0101_lod0.scm",
+        "builder": "modkit-extensions-other/test/behavior/supcom-fixtures.ts#unitScm",
+        "sha256": "77ddd27cc2b6722ef5f30f2c6ba13404e15ef8b5ba1d9100a385a56dbbffddca"
+      },
+      {
+        "name": "UEL0101_Awalk.sca",
+        "builder": "modkit-extensions-other/test/behavior/supcom-fixtures.ts#unitWalkSca",
+        "sha256": "49077c4077ab4e8a32deefa0a7024f007bb0cbf6af56ef13b16cf3ebf188c16d"
+      },
+      {
+        "name": "UEL0101_unit.bp",
+        "builder": "modkit-extensions-other/test/behavior/supcom-fixtures.ts#UNIT_BLUEPRINT",
+        "sha256": "f6dabb87eee8a961a0db795bb9df410416479efd4f20b361a65a0be5e9e62509"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/codec.manifest.json",
+        "sha256LF": "8b54843883a035b757617f0b386c01d28b649b0f0733720608275884da1f7578"
+      },
+      {
+        "name": "mk2 src/implementation.ts",
+        "fixture": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/src/implementation.ts",
+        "sha256LF": "6082161db9d8ea79363c8981a07023077731b97b63417b2d1bc1c8288d8ddef9"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/src/index.ts",
+        "sha256LF": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:exports",
+      "verdict": "identical",
+      "resultDigest": "59f66b3a3b34fc37bbb496859d26ae6db051732aaeddef77611ffddf8ba8d128",
+      "mk3Operation": "the audit below covers each export of implementation.ts (index.ts re-exports it)"
+    },
+    {
+      "id": "mk2-source:isSupremeCommanderScm+supremeCommanderScmModelCodec",
+      "verdict": "identical",
+      "resultDigest": "82b6e49786fdcbf8c37cacf0f3cf96ceb675be4d6c677dada0784332a4edadec",
+      "mk3Operation": "scm.ts detectScm, the codec manifest (match, companions, sources)"
+    },
+    {
+      "id": "mk2-source:isSupremeCommanderSca",
+      "verdict": "identical",
+      "resultDigest": "5fcaa1a20c7e1bcff1d378e2fc53cc4ff1baa41dff2121bb1854bd4a9364ce9d",
+      "mk3Operation": "scm.ts detectSca"
+    },
+    {
+      "id": "mk2-source:parseSupremeCommanderScmRenderModel",
+      "verdict": "identical",
+      "resultDigest": "19e8dea6e5748b81723ef458c1f2bdd32dd8ebab0c2f6af320eb6a3e1c986577",
+      "mk3Operation": "view.inspect (scm.ts parseScm, scm-codec.ts)"
+    },
+    {
+      "id": "mk2-source:parseSupremeCommanderScmRenderModel:issues",
+      "verdict": "identical",
+      "resultDigest": "e851324a4a4fe5fad732bb8f11bda1bfdf010bf06386956fde9cc6f093f0acf7",
+      "mk3Operation": "scm.ts parseScm diagnostics"
+    },
+    {
+      "id": "mk2-source:parseSupremeCommanderScmRenderModel:fallback-bones",
+      "verdict": "identical",
+      "resultDigest": "889a50a0e1dc7243b4a3bcf960d74985d013bdd92a7d8126e3bae84980dee75a",
+      "mk3Operation": "not carried: MK2 added bones without bind matrices from the name table; owner decision 2026-09-26 (GAME-SUPCOM session)"
+    },
+    {
+      "id": "mk2-source:parseSupremeCommanderBlueprint+SupremeCommanderBlueprint+SupremeCommanderBlueprintLod",
+      "verdict": "identical",
+      "resultDigest": "5efde331e415e2ba570d5e81321f83ce849a713d29a401814898a4f94442a319",
+      "mk3Operation": "blueprint.ts readBlueprint (modkit-extension-lua, gpg dialect)"
+    },
+    {
+      "id": "mk2-source:parseSupremeCommanderScaAnimation+SupremeCommanderScaAnimation+SupremeCommanderScaFrame+SupremeCommanderScaPose",
+      "verdict": "identical",
+      "resultDigest": "57a19fd7e78207495aacbed39ab70cb39339b335b2038fa3db211b37534a5848",
+      "mk3Operation": "scm.ts parseSca"
+    },
+    {
+      "id": "mk2-source:mergeSupremeCommanderBlueprint",
+      "verdict": "identical",
+      "resultDigest": "66206d64dba55c648ffa47f18815da5f460ace153288dd372030d4aa1a522a1b",
+      "mk3Operation": "model-material-source (LOD textures, shader), model.export-uvm (UniformScale as UV_units)"
+    },
+    {
+      "id": "mk2-source:mergeSupremeCommanderScaAnimation",
+      "verdict": "identical",
+      "resultDigest": "0334dbc852b41b56e685d0ce3ecc3bd86b9669b7b95557d82a93d39a7b0071f3",
+      "mk3Operation": "model-animation-source (SCA companions joined by bone name), model.export-uvm animations"
+    },
+    {
+      "id": "mk2-source:supremeCommanderScaSidecarCandidates+supremeCommanderScaSidecarPattern",
+      "verdict": "identical",
+      "resultDigest": "ec4740afa1625604c074c90e61fba5d1a47eea2ed91681ed26425383cadc6aa3",
+      "mk3Operation": "planInput (supcom-sca), model-resource-refs-source (clips a blueprint names elsewhere)"
+    },
+    {
+      "id": "mk2-source:supremeCommanderBlueprintSidecarCandidates",
+      "verdict": "identical",
+      "resultDigest": "ab5af37f6741c527b26a242dd155db89d9979152a0e6ab54789def1adaa70e7c",
+      "mk3Operation": "planInput (supcom-bp); the first bound in this order is taken"
+    },
+    {
+      "id": "mk2-source:supremeCommanderTextureSidecarCandidates",
+      "verdict": "identical",
+      "resultDigest": "7e3967f0b94fb597bfabbf310e7d7d70e8d5dd78c726438e5848cbd1913341c9",
+      "mk3Operation": "model-material-source names one texture per slot, the blueprint LOD's or the convention's, which the host resolves; MK2's _lodN_ guesses without a blueprint are not carried, owner decision 2026-09-26 (GAME-SUPCOM session)"
+    },
+    {
+      "id": "mk2-manifest:match",
+      "verdict": "identical",
+      "resultDigest": "5b247f12af00451d38974bc2eef52ffa1ad1cd0c0639f802e6109c3b83fd3598",
+      "mk3Operation": "spec.match"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "051c313e749d86dc5c53ccb14131aabfa062d0e6b6b6356f30f5e7672adb791f",
+      "mk3Operation": "common.view/model-scene-source; model.render (modkit/model-uvm) over model.export-uvm"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/supcom-scm/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:exports",
+        "mk2-source:isSupremeCommanderScm+supremeCommanderScmModelCodec",
+        "mk2-source:isSupremeCommanderSca",
+        "mk2-source:parseSupremeCommanderScmRenderModel",
+        "mk2-source:parseSupremeCommanderScmRenderModel:issues",
+        "mk2-source:parseSupremeCommanderScmRenderModel:fallback-bones",
+        "mk2-source:parseSupremeCommanderBlueprint+SupremeCommanderBlueprint+SupremeCommanderBlueprintLod",
+        "mk2-source:parseSupremeCommanderScaAnimation+SupremeCommanderScaAnimation+SupremeCommanderScaFrame+SupremeCommanderScaPose",
+        "mk2-source:mergeSupremeCommanderBlueprint",
+        "mk2-source:mergeSupremeCommanderScaAnimation",
+        "mk2-source:supremeCommanderScaSidecarCandidates+supremeCommanderScaSidecarPattern",
+        "mk2-source:supremeCommanderBlueprintSidecarCandidates",
+        "mk2-source:supremeCommanderTextureSidecarCandidates",
+        "mk2-manifest:match",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

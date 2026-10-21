@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/unity/engine/codecs/unity at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-audit-receipts.test.ts",
+    "samples": [
+      {
+        "name": "Plain.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(RGBA32 2x1)",
+        "sha256": "850b6cc21737a018963a10d4d17f3e9144210e29214867e758b4095d07e2b768"
+      },
+      {
+        "name": "Sky.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(DXT1 cubemap, six solid faces)",
+        "sha256": "16893b7fe059a47b002d7f0afb4db9f915d9f02bfd42b4fa033557d95003e75c"
+      },
+      {
+        "name": "Layers.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(RGB24 2D array of two layers)",
+        "sha256": "0a311c8c55f059933ad4d7495d6aa745dc4363f5fb93feb4e974a0165976ce3a"
+      },
+      {
+        "name": "Volume.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(RGBA32 2x2x2 Texture3D with its 1x1x1 mip)",
+        "sha256": "b828b5295545e74a7334872b819bf5b27228df01ef8afb53e2eb63818a5234b7"
+      },
+      {
+        "name": "Etc.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(ETC2 RGB 4x4, one zero block)",
+        "sha256": "7bfaf7c3c50c0c349c4259925e869559245623c633a4942c501060e04bdc7435"
+      },
+      {
+        "name": "Crunch.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(DXT1 Crunched 64x64 of eight bytes that are not Crunch)",
+        "sha256": "9a97994788cc66601440a69aa3810c0c006571cd4531a1947012a3c134a4c63f"
+      },
+      {
+        "name": "CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unitySerialized(UNITY_SAMPLE)",
+        "sha256": "3e86619e08672be789d3348ee535e916b529d540044c674b520f758400f84346"
+      },
+      {
+        "name": "CAB-cafe.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#SAMPLE_PIXELS.ress",
+        "sha256": "95336db1f61d6507a15e82d7ddc943538ec887de64f5ecc71a58e265ca42de36"
+      },
+      {
+        "name": "not-unityfs.bin",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#'UnityFSX' + 24 zero bytes",
+        "sha256": "55cdae4187764f4a9e52164596f68cfd14b22c8095245ed73d46f7f7a6bd361d"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity/codec.manifest.json",
+        "sha256LF": "6012b8006128cf9198e00ee8cebeaa33fa0f7cca685939c35957fcc8e16cdabd"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity/src/detect.ts",
+        "sha256LF": "3849b070b3fe91e8b0a2cb79f03d4dba48b5a11f30fea39f7c3155862c5e676a"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity/src/index.ts",
+        "sha256LF": "202b47e6bad803080947a49520a1d07e9de4b81b3901567d99b08d248346ec59"
+      },
+      {
+        "name": "mk2 engine:src/unity.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/src/unity.ts",
+        "sha256LF": "36be721750526906f5cbc7c43e352a06917fe80bfbb75cb54a19d0d71147429c"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts+default unityCodec#canDecode",
+      "verdict": "identical",
+      "resultDigest": "96c21deb33226e0b67e0700436996128f552ab2d6733efd42dce88e3d6026bde",
+      "mk3Operation": "probe: a payload is claimed by modkit/unity, a serialized file by modkit/unity-assets (whose texture entries go to the DDS, KTX and unity codecs)"
+    },
+    {
+      "id": "mk2-source:parseUnityTexturePayload+isUnityTexturePayload",
+      "verdict": "identical",
+      "resultDigest": "a84dea786343226876a3877ef7b5b55c3f19df9b7a87b2db2eec17110ff3332f",
+      "mk3Operation": "shared/texture.ts parseUnityTexturePayload"
+    },
+    {
+      "id": "mk2-source:default unityCodec#decode+selectUnityTextureImage+selectUnityVolumeSlice+canDecodeTexture",
+      "verdict": "identical",
+      "resultDigest": "9675bce8b90afb0498de8bbbf7fc984f7f6c15372299b63bb70defcd451aa16a",
+      "mk3Operation": "common.view/raster-image-source readRegion (face, layer, slice, mipLevel) against the image MK2 wrapped for its DDS or KTX decoder"
+    },
+    {
+      "id": "mk2-source:decodeUnityCrunchTexture+unpackUnityCrunchTexture+unityBlockMip",
+      "verdict": "identical",
+      "resultDigest": "1c28f2eb0958c3d15db1f0f0e7f2b8998ca2b8f67ab426a1fbb3d561fe76fad9",
+      "mk3Operation": "raster readRegion through codec-kit's unpack_unity_crunch/unpack_crunch (MK2's order); bytes that are not Crunch are refused by both"
+    },
+    {
+      "id": "mk2-source:default unityCodec#describe (MKXUNITYTEX)+textureHasAlpha+unityTextureDimensionName",
+      "verdict": "identical",
+      "resultDigest": "3194bfef7a93ed6b90faf67e559fa2a794bcc900267f5dccb0ba9b0312788168",
+      "mk3Operation": "view.inspect descriptor metadata and the raster alphaMode"
+    },
+    {
+      "id": "mk2-source:default unityCodec#decode (a serialized file, a .resS with its .assets)",
+      "verdict": "identical",
+      "resultDigest": "9dc751ac55548a596be8b5f132871c1bdf2bdbd8f81ce2d336466d1d2361081a",
+      "mk3Operation": "modkit/unity-assets and modkit/unity-ress list the texture as the DDS MK2 wrapped"
+    },
+    {
+      "id": "mk2-source:default unityCodec#describe (a serialized file, a .resS)",
+      "verdict": "identical",
+      "resultDigest": "537c37d4de3d7ae507d60211f55410477f52b208da64c8bed21613f69c7c33b3",
+      "mk3Operation": "modkit/unity-assets and modkit/unity-ress view.inspect"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "mk3Operation": "spec.match.extensions of modkit/unity, unity-assets and unity-ress"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "bb7ea5dbfaa590a33bddeef136fc953709553bc0f71d46c6259b33cc0bb83fef",
+      "mk3Operation": "view.raster-image-source, view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts+default unityCodec#canDecode",
+        "mk2-source:parseUnityTexturePayload+isUnityTexturePayload",
+        "mk2-source:default unityCodec#decode+selectUnityTextureImage+selectUnityVolumeSlice+canDecodeTexture",
+        "mk2-source:decodeUnityCrunchTexture+unpackUnityCrunchTexture+unityBlockMip",
+        "mk2-source:default unityCodec#describe (MKXUNITYTEX)+textureHasAlpha+unityTextureDimensionName",
+        "mk2-source:default unityCodec#decode (a serialized file, a .resS with its .assets)",
+        "mk2-source:default unityCodec#describe (a serialized file, a .resS)",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

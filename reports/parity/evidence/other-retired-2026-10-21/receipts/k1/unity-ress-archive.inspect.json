@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-ress",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-cafe.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#SAMPLE_PIXELS.ress"
+      },
+      {
+        "name": "CAB-cafe.resS+CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#SAMPLE_PIXELS.ress"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:CAB-cafe.resS:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "51f7f2e03a9992ed08dac3e71e14e670d0329c15d3da0f16c9fbe3ad3469113a",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:CAB-cafe.resS+CAB-cafe:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "577f2c39c27f4ddc14325c5dcbf2c0dd5f5cb531c4b97cbdb859ab2128f49bc9",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:CAB-cafe.resS:view.inspect",
+        "synthetic:CAB-cafe.resS+CAB-cafe:view.inspect"
+      ]
+    }
+  ]
+}

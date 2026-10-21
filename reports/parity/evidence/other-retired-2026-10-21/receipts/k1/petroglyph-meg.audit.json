@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "codec": "petroglyph-meg",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-petroglyph-audits.test.ts",
+    "samples": [
+      {
+        "name": "format1.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 1 })",
+        "sha256": "675b7cd4fc2bb521fe5883e502ebc7d473b9d298ceaa050934b07894b2f9003a"
+      },
+      {
+        "name": "format2.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 2 })",
+        "sha256": "0c724866a8252ee46be0914bf32fe20fbf79f7d25f837f6045a2a86dfd84213c"
+      },
+      {
+        "name": "format3.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 3 })",
+        "sha256": "e1814a517fe26f800f1e195bd43eb0cb9650014681804ca9748ea88fc159ac57"
+      },
+      {
+        "name": "grey-goo-encrypted.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES with flags 1, { encrypted: true })",
+        "sha256": "d6c182257157eef83d9074621807fe15c1b0955758475f5646ca56f3a4266e4d"
+      },
+      {
+        "name": "unknown-flags.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg([MEG_FILES[0] with flags 2])",
+        "sha256": "d8f75e80ce4a1447fbaccbd1aa928a58d4dcfaba9266612af59f0d6f3eb84f5e"
+      },
+      {
+        "name": "unit.alo",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#greyGoo(ALO_MODEL)",
+        "sha256": "30b3d12ed722f24e49a7281ffa78417d914fd303e850ab02663b9a448760c4dd"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/codec.manifest.json",
+        "sha256LF": "ccf5465d2ae08ebb2e04bdd37bd5edf54d6c4cf9416803dd5948f8419ae7d519"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/src/detect.ts",
+        "sha256LF": "2b1c2567c2cb446e75c5d24aef3304549c5afda6341bca0a5fc09c39d3e0fe0f"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/src/index.ts",
+        "sha256LF": "84b6530688eb084ee42d1a63fb00a9b97a7640bee02306a977f685d91a652753"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "e630a1cd21ab993b934f81e422c3c25ffa50f00ea0a54b67c87087f0cba9e587",
+      "mk3Operation": "probe (petroglyph-meg manifest probe plan) + view.inspect"
+    },
+    {
+      "id": "mk2-source:PetroglyphMegVariant+PetroglyphMegEntry+PetroglyphMegArchive+isPetroglyphMeg+parsePetroglyphMegHeader+parsePetroglyphMegArchive",
+      "verdict": "identical",
+      "resultDigest": "1ff7efaae55eeecd09721d19e8e4e14459a067951eabd9e290ae4dcf149012fd",
+      "mk3Operation": "meg.ts readMegHeader + readMegIndex (MegHeader, MegIndex, MegRecord)"
+    },
+    {
+      "id": "mk2-source:describePetroglyphMegArchive+openPetroglyphMegSource+describePetroglyphMegSource",
+      "verdict": "identical",
+      "resultDigest": "e4df72b65058ddbc4044f06c5b18fd8e1380c126ade334b87af609f95950f0ae",
+      "mk3Operation": "view.inspect (petroglyph-meg ranges codec)"
+    },
+    {
+      "id": "mk2-source:readerForPetroglyphMegArchive",
+      "verdict": "identical",
+      "resultDigest": "c9de6c8d96a92126779da18cf47345a3e0def7406b1cb8db12d862e7e7a69be1",
+      "mk3Operation": "container.extract (S3 containerEntries of petroglyph-meg)"
+    },
+    {
+      "id": "mk2-source:parseMegaFilesXml",
+      "verdict": "identical",
+      "resultDigest": "0929d1a0a505cbea4510406f15b460f7a23f3bac8e42d6cb99e106749e495238",
+      "mk3Operation": "meg.ts megaFiles (codec-kit scanXml)"
+    },
+    {
+      "id": "mk2-source:openPetroglyphMegStack+PetroglyphMegStackDiagnostic+PetroglyphMegStackReader",
+      "verdict": "identical",
+      "resultDigest": "6fc6359b7b5119eba855e8064575989769582c261980c25361679a816366760b",
+      "mk3Operation": "grey-goo-game content sources (createLayeredArchiveContentSources layers)"
+    },
+    {
+      "id": "mk2-source:default petroglyphMegCodec",
+      "verdict": "identical",
+      "resultDigest": "ed6ef5ab6ae0880105c52f7c9fea673d7e328b451c272b78b32363ab5431f426",
+      "mk3Operation": "modkit/petroglyph-meg contribution (codec.js → dist/petroglyph-meg/meg-codec.js)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "b87304223934782d4a264658f200a0eb174e388e9428608fb16263d8c2621544",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/petroglyph-meg/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:PetroglyphMegVariant+PetroglyphMegEntry+PetroglyphMegArchive+isPetroglyphMeg+parsePetroglyphMegHeader+parsePetroglyphMegArchive",
+        "mk2-source:describePetroglyphMegArchive+openPetroglyphMegSource+describePetroglyphMegSource",
+        "mk2-source:readerForPetroglyphMegArchive",
+        "mk2-source:parseMegaFilesXml",
+        "mk2-source:openPetroglyphMegStack+PetroglyphMegStackDiagnostic+PetroglyphMegStackReader",
+        "mk2-source:default petroglyphMegCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

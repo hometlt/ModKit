@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-tex",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the standard image written behind the native TEX header, handed unchanged to the standard image codec; the PNG decoded to the pixels it was written with",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-tex-receipts.test.ts",
+    "samples": [
+      {
+        "name": "png.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(TEX_PNG, 32)",
+        "sha256": "47439a0a17e50204774a21f4267560efef2d2b45ab8f9893cb2de24607924a3a"
+      },
+      {
+        "name": "dds.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(dds4x4(), 64)",
+        "sha256": "b2b10e0d136c37d35c1b0c6d66e7625ce66b7e178990c180fc488b16884c475a"
+      },
+      {
+        "name": "tga.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(encodeTga(TEX_PIXELS), 16)",
+        "sha256": "b5f0610db4c15485311492ab2ab0884259f83676b0c4d0dc48a1cd0407df7d7e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:png.tex:listing",
+      "verdict": "identical",
+      "resultDigest": "99c5ec9f47d5edc70f1eb7952780ef7111f4362f4f11d7d7816d26b82798fb1b",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:png.tex:embedded.png:container.extract",
+      "verdict": "identical",
+      "resultDigest": "c9a7b6179c9fdcebd4e73ce2c896fb3b9472dee60fe15c923bed81ffd62eabfb",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:png.tex:embedded.png:pixels",
+      "verdict": "identical",
+      "resultDigest": "d8f194d826a5c1c2db3cf599749558c578279d4658f983b610fab48a02da0c47",
+      "mk3Operation": "container.extract, then codec-kit decodePngSamples (the standard PNG codec)"
+    },
+    {
+      "id": "synthetic:dds.tex:listing",
+      "verdict": "identical",
+      "resultDigest": "6d5064d9e4b5182acbca4ecc28d6b83da05e5def26e0eec3deb286893a19fb75",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:dds.tex:embedded.dds:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e6695ab98d9e5efeb00a49e047977d741afd41dc38b581f3513950cbfe74f6f4",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:tga.tex:listing",
+      "verdict": "identical",
+      "resultDigest": "aa1dbe934f3b64125100175a54d00e70e9d9ea9d39697cb02f136467baf15c80",
+      "mk3Operation": "common.view/namespace-entry-source"
+    },
+    {
+      "id": "synthetic:tga.tex:embedded.tga:container.extract",
+      "verdict": "identical",
+      "resultDigest": "1bd8bed98a73d645a5db2689f4dac927d300d19aa2b15e969b5ff018858bdd4c",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
+      "kind": "operation",
+      "legacyOperation": "image.read",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:png.tex:listing",
+        "synthetic:png.tex:embedded.png:container.extract",
+        "synthetic:png.tex:embedded.png:pixels",
+        "synthetic:dds.tex:listing",
+        "synthetic:dds.tex:embedded.dds:container.extract",
+        "synthetic:tga.tex:listing",
+        "synthetic:tga.tex:embedded.tga:container.extract"
+      ]
+    }
+  ]
+}

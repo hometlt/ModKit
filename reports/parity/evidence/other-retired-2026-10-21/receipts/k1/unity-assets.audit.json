@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-assets",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/unity/engine/codecs/unity-assets at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-audit-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unitySerialized(UNITY_SAMPLE)",
+        "sha256": "3e86619e08672be789d3348ee535e916b529d540044c674b520f758400f84346"
+      },
+      {
+        "name": "CAB-cafe.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#SAMPLE_PIXELS.ress",
+        "sha256": "95336db1f61d6507a15e82d7ddc943538ec887de64f5ecc71a58e265ca42de36"
+      },
+      {
+        "name": "CAB-hero",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityCharacter().file",
+        "sha256": "29386fba5fa1c029b5f48b8ed8cc7ee3ecf9e35f16f8dff20f0d49a475c713db"
+      },
+      {
+        "name": "CAB-hero.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityCharacter().ress",
+        "sha256": "3f778f8ddd6b808b6709db2e1e68eaffb3b33a62f23b6830634885e9867a17a9"
+      },
+      {
+        "name": "cab.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs(CAB-cafe = unitySerialized(UNITY_SAMPLE), CAB-cafe.resS = SAMPLE_PIXELS.ress)",
+        "sha256": "3d91ac9788bc0f0a2abcc3f6ab96dae0b7929c79480396a28ddca5852f888bf0"
+      },
+      {
+        "name": "not-unityfs.bin",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#'UnityFSX' + 24 zero bytes",
+        "sha256": "55cdae4187764f4a9e52164596f68cfd14b22c8095245ed73d46f7f7a6bd361d"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/codec.manifest.json",
+        "sha256LF": "16cd2180a4f1314053963ddb69d8298726d3fbfdcc953c596a61d98e14aea616"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/src/detect.ts",
+        "sha256LF": "75d3eabbb2ec4cc9b679fb5c8635dfbc6ba34456027724a2d320e6e804aaacd3"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/src/index.ts",
+        "sha256LF": "0f8b70641029b9d97d4f205460076bbddc46158a99e5fe9c1a806ea41566dc8f"
+      },
+      {
+        "name": "mk2 engine:src/unity.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/src/unity.ts",
+        "sha256LF": "36be721750526906f5cbc7c43e352a06917fe80bfbb75cb54a19d0d71147429c"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts+default unityAssetsCodec#sniff",
+      "verdict": "identical",
+      "resultDigest": "8c551d65459f5636777ff2ae8bbeda06569da6d505c765a6629b497e03b2b005",
+      "mk3Operation": "probe (unity-assets manifest probe plan): the header check or the structural sniff, as MK2 claimed a file by either"
+    },
+    {
+      "id": "mk2-source:isLikelyUnitySerializedHeader+detectHeader",
+      "verdict": "identical",
+      "resultDigest": "b571c3c56a3edf68a4edffce58915f43af182035878386f2d3563317e844d39a",
+      "mk3Operation": "shared/serialized.ts isLikelyUnitySerializedHeader"
+    },
+    {
+      "id": "mk2-source:isLikelyUnitySerializedFile (engine, the registry sniff)",
+      "verdict": "identical",
+      "resultDigest": "8c551d65459f5636777ff2ae8bbeda06569da6d505c765a6629b497e03b2b005",
+      "mk3Operation": "shared/serialized.ts isLikelyUnitySerializedFile over the whole file"
+    },
+    {
+      "id": "mk2-source:default unityAssetsCodec#open",
+      "verdict": "identical",
+      "resultDigest": "b9a513d08ada5780fb3bd3fb5d721ac0852ca9015c2507393f425b9fc830e5ca",
+      "mk3Operation": "common.view/namespace-entry-source, container.extract: every entry of MK2 buildUnitySerializedEntries, by name and bytes (mesh issues in code order, see entryDigest)"
+    },
+    {
+      "id": "mk2-source:default unityAssetsCodec#open (an object its reader cannot read)",
+      "verdict": "identical",
+      "resultDigest": "f8cb7329c4a597e002f8a05ef158e8b00c7f87c1195e4218bca1189b869cc412",
+      "mk3Operation": "lists it by the m_Name it begins with (MK2 listed Material-10)"
+    },
+    {
+      "id": "mk2-source:default unityAssetsCodec#describe",
+      "verdict": "identical",
+      "resultDigest": "a60312c7322513f17f4b9da9cefa85ace3de1f2caf94bb32f9937f9a112286a9",
+      "mk3Operation": "view.inspect descriptor metadata (unity-assets rows)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "mk3Operation": "spec.match.extensions (MK2 extensions, all kept)"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-assets/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts+default unityAssetsCodec#sniff",
+        "mk2-source:isLikelyUnitySerializedHeader+detectHeader",
+        "mk2-source:isLikelyUnitySerializedFile (engine, the registry sniff)",
+        "mk2-source:default unityAssetsCodec#open",
+        "mk2-source:default unityAssetsCodec#open (an object its reader cannot read)",
+        "mk2-source:default unityAssetsCodec#describe",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

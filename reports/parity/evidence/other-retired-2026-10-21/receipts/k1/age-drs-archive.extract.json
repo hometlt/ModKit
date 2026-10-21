@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "age-drs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.age-drs",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.age-drs",
+        "sha256": "fc4c9c723567b675528e21b08f3e349969f04b87f4b70d0ca500fd45f7ae79ba"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.age-drs:slp/42.slp:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4a046e33ecf7aced9bfd000747bb1fda7836c8ceeff662af33c2a2c288b4e78c",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.age-drs:wav/7.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "dd29442deca69f52c50006b831cb216edf78a7da33748f0a80ff19f2ebe57ecd",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.age-drs:slp/42.slp:container.extract",
+        "synthetic:minimal.age-drs:wav/7.wav:container.extract"
+      ]
+    }
+  ]
+}

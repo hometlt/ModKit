@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset-texture",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the Texture2D export, pixel format and mip size written into the sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.texture2d.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.texture2d.uasset",
+        "sha256": "4b314fe1cb2a707457b4ae2d64eed4e7200cc85fa8417eaa9e222655e05f7a77"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.texture2d.uasset:summary",
+      "verdict": "identical",
+      "resultDigest": "359f290ea3847a80e058b5ddff3413748fd3555f510f1a548cfd2e770f20e88a",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.texture2d.uasset:summary"
+      ]
+    }
+  ]
+}

@@ -28,7 +28,7 @@ export async function portContext({ discoverRepositories = false } = {}) {
     repositories.push(
       { id: 'core', directory: coreRoot, workspaceRelativeRoot: path.basename(coreRoot) },
       ...[
-        'blizzard', 'warzone', 'ea', 'spring', 'other', 'realitypump',
+        'blizzard', 'warzone', 'ea', 'spring', 'realitypump',
         'petroglyph', 'relic', 'gas-powered', 'unity', 'ensemble', 'unreal', 'rad', 'facefx', 'wwise', 'fmod', 'empire-earth', 'ps1', 'flash', 'documents', 'frostgiant',
       ].map(id => {
         const descriptor = externalRepositoryDescriptor(id, workspaceRoot)

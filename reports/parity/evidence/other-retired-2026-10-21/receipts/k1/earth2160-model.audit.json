@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth2160-model",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-audits.test.ts",
+    "samples": [
+      {
+        "name": "Fixture.kfr",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedKfr",
+        "sha256": "47117a0a6de13e55d10c6840e94dd9b9edf17e010754fbd3099f4baf8c29ba14"
+      },
+      {
+        "name": "A_CH_GJ_02_1_B.kfr",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#markerKfr",
+        "sha256": "b567adca52c9d80c6449cf943414bc9a0a7d2a5cd3242029c666d326e14144a5"
+      },
+      {
+        "name": "Fixture.skn",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedSkn",
+        "sha256": "60cb3ddc76224179528eb7f1fe4b5c98d871c7215fdf99ba7d22a98caaaf9844"
+      },
+      {
+        "name": "A_CH_GJ_02_1_B.mot",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#markerMot",
+        "sha256": "2ba70414395207e21010531d64feed5c6baa3fd0aa7360afd3573d244eef4f02"
+      },
+      {
+        "name": "every-record.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#wd",
+        "sha256": "4380c7418d28be7f38ee84408395724722dfbd13dca66ead2772f4ddcdd43eb0"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/codec.manifest.json",
+        "sha256LF": "c807c8b6189d2b25bc0575866fc510aa2c21bd6e7ab59141a087359cc4055719"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/src/index.ts",
+        "sha256LF": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987"
+      },
+      {
+        "name": "mk2 src/implementation.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/src/implementation.ts",
+        "sha256LF": "2fd789de3a52d79930dbe540a1a7f05e636131f2bc14d8d1479833f6d490326c"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isEarth2160ModelFamilyHeader",
+      "verdict": "identical",
+      "resultDigest": "72422c7520365c10505ce2e298d8ddae62e7678027922329b504125a71d118b4",
+      "mk3Operation": "earth2160-model/format.ts isEarth2160ModelFamilyHeader"
+    },
+    {
+      "id": "mk2-source:parseEarth2160RenderModel",
+      "verdict": "identical",
+      "resultDigest": "44f944ccf15744ac228d9b05029efb372a9aeebaaa7fa7d861befbecfe1ff1a0",
+      "mk3Operation": "earth2160-model/format.ts parseEarth2160RenderModel"
+    },
+    {
+      "id": "mk2-source:parseEarth2160RenderModelWithMotion",
+      "verdict": "identical",
+      "resultDigest": "9689163d00c326bc0dd883b1df212aa45c6db1f71dd7541eb58cdb87c1432f58",
+      "mk3Operation": "earth2160-model/format.ts parseEarth2160RenderModelWithMotion"
+    },
+    {
+      "id": "mk2-source:parseEarth2160RenderModelWithSidecars+Earth2160SidecarInput+Earth2160SidecarOptions",
+      "verdict": "identical",
+      "resultDigest": "91adc723bbba9f6610621fd1c7dcbbf43913bfeee5d26bcf938e83ba64e4c430",
+      "mk3Operation": "earth2160-model/format.ts parseEarth2160RenderModelWithSidecars"
+    },
+    {
+      "id": "mk2-source:earth2160MotionSidecarCandidates+earth2160SkinSidecarCandidates+earth2160KeysFilenames",
+      "verdict": "identical",
+      "resultDigest": "7318192bf29a97dad5b651429b74fedd878c8baa544371a1a83a123314e7de99",
+      "mk3Operation": "earth2160-model/format.ts candidates; the codec binds them as host companions"
+    },
+    {
+      "id": "mk2-source:earth2160ModelCodec",
+      "verdict": "identical",
+      "resultDigest": "ce2a5dfd68c451ffc542badb34d3a7a3f9db0c21084185b69a66d98b9df8a763",
+      "mk3Operation": "common.view/model-{skeleton,animation,effect,light,socket}-source, model-resource-refs-source"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "f71f4cb07765086d5fe107d1ef0a5663929fd10f5452c75c7d14ac8127355fff",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "6cf4933dbfa3a4844248e64fe4026e27670b4fb9cfb4129e680dd41e054102d8",
+      "mk3Operation": "view.model-scene-source, model.render"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth2160-model/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isEarth2160ModelFamilyHeader",
+        "mk2-source:parseEarth2160RenderModel",
+        "mk2-source:parseEarth2160RenderModelWithMotion",
+        "mk2-source:parseEarth2160RenderModelWithSidecars+Earth2160SidecarInput+Earth2160SidecarOptions",
+        "mk2-source:earth2160MotionSidecarCandidates+earth2160SkinSidecarCandidates+earth2160KeysFilenames",
+        "mk2-source:earth2160ModelCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

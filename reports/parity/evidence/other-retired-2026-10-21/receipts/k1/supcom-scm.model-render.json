@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "supcom-scm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "model.render",
+    "oracle": "the synthetic SCM exported by the codec's own model.export-uvm and drawn by the core UVM codec's model.render, both as the host runs them",
+    "suite": "modkit-extensions-other/test/behavior/k1-supcom-receipts.test.ts",
+    "samples": [
+      {
+        "name": "UEL0101_lod0.scm",
+        "builder": "modkit-extensions-other/test/behavior/supcom-fixtures.ts#unitScm",
+        "sha256": "77ddd27cc2b6722ef5f30f2c6ba13404e15ef8b5ba1d9100a385a56dbbffddca"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:UEL0101_lod0.scm:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "68f20225212e46b5cad641f4ccd407ce56dc06de1d766cf04128d50aaa2fbc6c",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:UEL0101_lod0.scm:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/supcom-scm/operation/model.render",
+      "kind": "operation",
+      "legacyOperation": "model.render",
+      "adapterOperation": "model.render",
+      "targetOperation": "model.render",
+      "handlerId": "render-uvm-scene",
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:UEL0101_lod0.scm:model.export-uvm",
+        "synthetic:UEL0101_lod0.scm:model.export-uvm:model.render"
+      ]
+    }
+  ]
+}

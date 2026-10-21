@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "codec": "rgt",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "common.edit/writer",
+    "oracle": "the two flat blocks written over the sample through the host's resolved rgba8 writer, read back exactly from DXT5; the chunk tree MK2's encode wrote",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rgt",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rgtSample",
+        "sha256": "e831eb4862081934199898384bc0410845677dbd46d55e14f87ced45af15b4d8"
+      },
+      {
+        "name": "blocks-8x4.rgba",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#DXT_BLOCKS",
+        "sha256": "0d5c6e6cdb1fae153c709937c21c2d5213a7b26e4f6274ce7efcc00f37730b40"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:red.rgt+blocks-8x4.rgba:writer",
+      "verdict": "identical",
+      "resultDigest": "01f4ea72169d96ee99215c6c418d1cdc32b11ef586d4188da84a377a741b2e80",
+      "mk3Operation": "common.edit/writer@1 resolved by the facet of the opened subject"
+    },
+    {
+      "id": "synthetic:red.rgt+blocks-8x4.rgba:chunk-tree",
+      "verdict": "identical",
+      "resultDigest": "acf959b8a1438e451a51db5e6ba12ce64815c8c1e758b834178a684d4ea6d445",
+      "mk3Operation": "the committed file"
+    },
+    {
+      "id": "synthetic:red.rgt+blocks-8x4.rgba:read-back",
+      "verdict": "identical",
+      "resultDigest": "296702674981c6cbc2acb45b785367533ddebc7a6730cbf275dcaa63639ee5fc",
+      "mk3Operation": "view.inspect and common.view/raster-image-source of the committed file"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rgt/operation/image.write",
+      "kind": "operation",
+      "legacyOperation": "image.write",
+      "adapterOperation": "common.edit/writer",
+      "targetWriter": {
+        "contract": "common.edit/writer",
+        "major": 1,
+        "offerId": "rgt-rgba8-encoder"
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/writer-relic-texture.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:red.rgt+blocks-8x4.rgba:writer",
+        "synthetic:red.rgt+blocks-8x4.rgba:chunk-tree",
+        "synthetic:red.rgt+blocks-8x4.rgba:read-back"
+      ]
+    }
+  ]
+}

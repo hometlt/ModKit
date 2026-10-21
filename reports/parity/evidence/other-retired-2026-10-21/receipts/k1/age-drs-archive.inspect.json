@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "age-drs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.age-drs",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.age-drs",
+        "sha256": "fc4c9c723567b675528e21b08f3e349969f04b87f4b70d0ca500fd45f7ae79ba"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.age-drs:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "c7d70f297b16e76e6f036463f264a80efc3cf49ac09e1ff1a91b97ae9870ccb7",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-drs.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.age-drs:view.inspect"]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-tex",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the kind and offset of the standard image written behind the native TEX header",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-tex-receipts.test.ts",
+    "samples": [
+      {
+        "name": "png.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(TEX_PNG, 32)",
+        "sha256": "47439a0a17e50204774a21f4267560efef2d2b45ab8f9893cb2de24607924a3a"
+      },
+      {
+        "name": "dds.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(dds4x4(), 64)",
+        "sha256": "b2b10e0d136c37d35c1b0c6d66e7625ce66b7e178990c180fc488b16884c475a"
+      },
+      {
+        "name": "tga.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(encodeTga(TEX_PIXELS), 16)",
+        "sha256": "b5f0610db4c15485311492ab2ab0884259f83676b0c4d0dc48a1cd0407df7d7e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:png.tex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "8d05cb4cb5a124e71ce57afb17c7f900f3faf8c98bd8dfabe08e90c5ca1f66d1",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:dds.tex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "62550bb043f0f60c7df2e22146c794580e26e12c820974c598e0b99502bd4233",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:tga.tex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "de60eee01a384657440f4e3504b2da47fdaa00fd220781d9dd75dc78465bd7a3",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:png.tex:view.inspect",
+        "synthetic:dds.tex:view.inspect",
+        "synthetic:tga.tex:view.inspect"
+      ]
+    }
+  ]
+}

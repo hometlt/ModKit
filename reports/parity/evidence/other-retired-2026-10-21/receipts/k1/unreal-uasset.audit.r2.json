@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 13,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.staticmesh.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.staticmesh.uasset",
+        "sha256": "6723839f8ce16424dc1e4ecc242da062bc179127cc22fb7ee24136d39697b08c"
+      },
+      {
+        "name": "SK_Arm.uasset (SkeletalMesh, UE 4.18-4.26, 4.27, 5.0; Skeleton; AnimSequence)",
+        "builder": "modkit-extensions-other/test/behavior/unreal-model-fixtures.ts",
+        "sha256": "22c132fdab6aed8ffdc28f7227403102251297796bb666cdcbea182d18095507"
+      },
+      {
+        "name": "Demo.pak (an AnimSequence with its Skeleton beside it, one whose Skeleton is missing)",
+        "builder": "modkit-extensions-other/test/behavior/unreal-model-fixtures.ts#animationPak",
+        "sha256": "440e125d1eae931cbfd367c564d196c1ccfffd13b6a6ae03cc4fe46dcc02e79f"
+      },
+      {
+        "name": "Demo.pak (a SkeletalMesh, its MaterialInstanceConstant and parent Material)",
+        "builder": "modkit-extensions-other/test/behavior/unreal-model-fixtures.ts#materialPak",
+        "sha256": "5efc7b6e25749752d285af8572249b442499a0fc864f1b4d1e6636a263c03519"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/codec.manifest.json",
+        "sha256LF": "013257976eeaaf2fd6b8e9fa2e8ff1abfa0c444aa85662c61bbcdce2d2d14df3"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/index.ts",
+        "sha256LF": "647094308094f6a10c3c95b96b779b8857fa39107090e7cd87e566d96a8d63d4"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset/src/implementation.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
+        "sha256LF": "c8adb63eb83db80cf77a3eb041d9fa556eac00fb8c0e6cd4dba426d9a0d0806a"
+      },
+      {
+        "name": "mk2 src/formats/unreal-static-mesh.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-static-mesh.ts",
+        "sha256LF": "613825df14c518a311ef1efd7db7fcee6e1e9a7eff9aaf44aac0331de3884410"
+      },
+      {
+        "name": "mk2 src/formats/unreal-skeletal-mesh.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
+        "sha256LF": "ca5eb7d52e5619bd46c826fbf47a7b22f146772ff07f5a44bb45843da8d50a4e"
+      },
+      {
+        "name": "mk2 src/formats/unreal-animation.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-animation.ts",
+        "sha256LF": "2466f9aa43fe8f205e8bb47e99d862732e4cdaecd3199858bb8323f84dd81da9"
+      },
+      {
+        "name": "mk2 src/formats/unreal-properties.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-properties.ts",
+        "sha256LF": "7c65d0aeb2dd8a7566b4af04f9dea2416ae6915529486eba168407a00c8f090e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/implementation.ts#isUnrealPackage",
+      "verdict": "identical",
+      "resultDigest": "db54395ce136daf07ac4817145fb8764dbda7afc45b514b648279eba90a260c7",
+      "mk3Operation": "unreal-package/package.ts PACKAGE_TAG and packageClassProbe"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#isUnrealPackage (big-endian tag)",
+      "verdict": "identical",
+      "resultDigest": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "mk3Operation": "not carried: big-endian packages are a limitation (integrator decision 2026-09-26, L)"
+    },
+    {
+      "id": "mk2-source:src/formats/unreal-static-mesh.ts#decodeUnrealStaticMeshExport",
+      "verdict": "identical",
+      "resultDigest": "49a9f0d191a0aa29be77bdae4385b8e97c9135191c0c5f92f45a64e76f8eb0dc",
+      "mk3Operation": "unreal-uasset/static-mesh.ts readStaticMesh via view.inspect"
+    },
+    {
+      "id": "mk2-source:src/formats/unreal-skeletal-mesh.ts#decodeUnrealSkeletalMeshExport",
+      "verdict": "identical",
+      "resultDigest": "8d6ec61b989542b0d0ae355934d57cff247194d5a7d3bbbc4a9ed0f058720c1f",
+      "mk3Operation": "unreal-uasset/skeletal-mesh.ts readSkeletalMesh via view.inspect"
+    },
+    {
+      "id": "mk2-source:src/formats/unreal-skeletal-mesh.ts#decodeUnrealSkeletonExport+renderUnrealReferenceSkeleton",
+      "verdict": "identical",
+      "resultDigest": "36647d1349e15acb6740ceabc63b8f7d0d6e822fd19a0c6b30f0b6ca26093398",
+      "mk3Operation": "unreal-uasset/skeletal-mesh.ts readSkeleton via view.model-skeleton-source"
+    },
+    {
+      "id": "mk2-source:src/formats/unreal-animation.ts#decodeUnrealRawAnimSequenceExport",
+      "verdict": "identical",
+      "resultDigest": "67da53e413fb3b4faa2d45e76d7596cb0246164be25c673a59b7becf3e093f5c",
+      "mk3Operation": "unreal-uasset/animation.ts readRawAnimSequence via view.model-animation-source"
+    },
+    {
+      "id": "mk2-source:src/formats/unreal-properties.ts#parseUnrealTaggedProperties+unrealIntProperty+unrealFloatProperty+unrealNameArrayProperty",
+      "verdict": "identical",
+      "resultDigest": "4f4323f34092dbadd208ba7126ba85907bc54ae0941b32b152fe1757a895ee04",
+      "mk3Operation": "unreal-package/properties.ts readTaggedProperties"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#unrealReferencedPackageCandidates+resolveUnrealAnimationSkeleton",
+      "verdict": "identical",
+      "resultDigest": "7f6ff8fb7b5fb64588af6b90bde57a30950c3c0a342f6c9f72a8d30b73d342d6",
+      "mk3Operation": "unreal-package/references.ts readReferencedPackage (host identity, /Game/X under Content/, no candidate guessing): the AnimSequence on its Skeleton bone nodes, a missing one diagnosed (host route, pak entries)"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#packageMaterials+resolveUnrealMaterialTextures",
+      "verdict": "identical",
+      "resultDigest": "4088b20bdbe0bf18992d4e91c126d8ab99bcf2f1e9b123262acf1b51bcebb5ea",
+      "mk3Operation": "unreal-uasset/materials.ts: a material per material import by slot, the textures of its package and parent packages as layers and reference-only resources, the export carrying them (host route, pak entries)"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#defaultMaterial (texture names from package strings)",
+      "verdict": "identical",
+      "resultDigest": "952c3628793717be0f0f8a6a562cf73adffdf5bb552bcd78b263ac288e452570",
+      "mk3Operation": "not carried: a texture name guessed from package strings is a guess (no guessing, integrator 2026-09-26); a mesh without material imports has slot materials without layers"
+    },
+    {
+      "id": "mk2-source:src/implementation.ts#resolveUnrealSidecars (.uexp, .ubulk, .usmap)",
+      "verdict": "identical",
+      "resultDigest": "440645a019336479dc033b6364c5458fb56030c756295080cdb9bb41aa0db057",
+      "mk3Operation": "spec.companions uexp and ubulk; .usmap not carried (limitation, integrator decision 2026-09-26)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "5d259678d987691e1ac397908f3424a9e333f81e6941836ea70fda50e0a8eed0",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "daf112d8f5319ac8dc383de89c384b849a0fe8b0e3898f74bdc5d1f0fda21e91",
+      "mk3Operation": "common.view/model-scene-source, model.export-uvm"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/implementation.ts#isUnrealPackage",
+        "mk2-source:src/implementation.ts#isUnrealPackage (big-endian tag)",
+        "mk2-source:src/formats/unreal-static-mesh.ts#decodeUnrealStaticMeshExport",
+        "mk2-source:src/formats/unreal-skeletal-mesh.ts#decodeUnrealSkeletalMeshExport",
+        "mk2-source:src/formats/unreal-skeletal-mesh.ts#decodeUnrealSkeletonExport+renderUnrealReferenceSkeleton",
+        "mk2-source:src/formats/unreal-animation.ts#decodeUnrealRawAnimSequenceExport",
+        "mk2-source:src/formats/unreal-properties.ts#parseUnrealTaggedProperties+unrealIntProperty+unrealFloatProperty+unrealNameArrayProperty",
+        "mk2-source:src/implementation.ts#unrealReferencedPackageCandidates+resolveUnrealAnimationSkeleton",
+        "mk2-source:src/implementation.ts#packageMaterials+resolveUnrealMaterialTextures",
+        "mk2-source:src/implementation.ts#defaultMaterial (texture names from package strings)",
+        "mk2-source:src/implementation.ts#resolveUnrealSidecars (.uexp, .ubulk, .usmap)",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

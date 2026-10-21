@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-actorx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the PNTS0000, VTXW0000, FACE0000, REFSKELT and RAWWEIGHTS records of the sample, mirrored to right-handed with the stored face order (MK2), skinned to its reference skeleton",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-model-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.actorx.psk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.actorx.psk",
+        "sha256": "4c6f6e7a9d2e3249e883e9e1c06d6678116d107e060fff2805d9f4e998413c9f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.actorx.psk:info",
+      "verdict": "identical",
+      "resultDigest": "745e482740eab0bb67428447b36316edc8c2e0ee2c225c1d97d4c67fb8f9d075",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.actorx.psk:nodes",
+      "verdict": "identical",
+      "resultDigest": "f613ba6f643117e2f454be7d7f64b4f9ace5292c4e6b47414b723f61eb60a8e5",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.actorx.psk:skin",
+      "verdict": "identical",
+      "resultDigest": "7d2d308fff4e1ad54867f8d4622a5bf4afcd0821d1ca401d0c030a45885ffadb",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.actorx.psk:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "28ff16e8b0ddcb103afdb2200dcfcec44ef132ba1e231a53a879cbab1a3de869",
+      "mk3Operation": "common.view/model-scene-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-actorx.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.actorx.psk:info",
+        "synthetic:minimal.actorx.psk:nodes",
+        "synthetic:minimal.actorx.psk:skin",
+        "synthetic:minimal.actorx.psk:primitive-0"
+      ]
+    }
+  ]
+}

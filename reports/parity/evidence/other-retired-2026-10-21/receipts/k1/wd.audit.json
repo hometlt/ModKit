@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "codec": "wd",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/realitypump/earth2160/codecs/wd at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-audits.test.ts",
+    "samples": [
+      {
+        "name": "every-record.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#wd",
+        "sha256": "4380c7418d28be7f38ee84408395724722dfbd13dca66ead2772f4ddcdd43eb0"
+      },
+      {
+        "name": "EARTH2150.par",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE, 3)",
+        "sha256": "cb08e1cef1aa558e34ad474ab3be7abe77feb0a682a35bac5a63838cc5099770"
+      },
+      {
+        "name": "unknown.res",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#res(3)",
+        "sha256": "72a65b6e3485c0218c21ec32cd99ec28a8365a07067916827c57d648e005676f"
+      },
+      {
+        "name": "renamed.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE)",
+        "sha256": "3c06383d97794f9b254b0cab8d3b8725b590113cd1d78f093fee09b83c1c9565"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/codec.manifest.json",
+        "sha256LF": "3990f93a62df754e96c4f3c36068fc0af6f85886f2c0e8dacf2a91733c089d6a"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/src/detect.ts",
+        "sha256LF": "3c3def793340e678112fad087a90ebd7b67a66e52b45201b62f53ea76bc4fc86"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/src/index.ts",
+        "sha256LF": "e98c94b166ee0f47dc92616427b5e630282c6e8ca463e2446353f546412f1796"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "604e75a2fc72b884ab3dc51c4fad69243f4f3b0ce89a34d1b0b7f8469aea638e",
+      "mk3Operation": "probe (wd manifest probe plan) + view.inspect"
+    },
+    {
+      "id": "mk2-source:parseWdArchive+WdEntry+WdArchive+WdSupplementaryData",
+      "verdict": "identical",
+      "resultDigest": "d83350d8102eb2604b301ce42a3296851e65672e6898f056c2d4242e20486ab6",
+      "mk3Operation": "wd/wd.ts readWdIndex"
+    },
+    {
+      "id": "mk2-source:default wdCodec",
+      "verdict": "identical",
+      "resultDigest": "9710e5a8baf755c60f08d31154a3dab3c8501f464c88eeef26569971c9277b92",
+      "mk3Operation": "view.inspect, common.view/namespace-entry-source, container.extract"
+    },
+    {
+      "id": "mk2-source:default wdCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "60b63e6e4fd3881e2073b210392c5f6042194c76a92db5e045a46134565c6a46",
+      "mk3Operation": "view.inspect metadata"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "d3549550a080f3a00a859d851a4282ef68bb69324f6699299e68b3067fb614fe",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    },
+    {
+      "id": "mk3-manifest:container.extract",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "spec.operations"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wd/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:parseWdArchive+WdEntry+WdArchive+WdSupplementaryData",
+        "mk2-source:default wdCodec",
+        "mk2-source:default wdCodec.describe",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations",
+        "mk3-manifest:container.extract"
+      ]
+    }
+  ]
+}

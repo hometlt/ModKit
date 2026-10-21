@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-iostore",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the bytes of each entry written into the sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unreal.utoc",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.utoc",
+        "sha256": "14006229f5cfab93f37331a7a4d2e4d1ae46f9723ef9ebc967d61c97543ade8a"
+      },
+      {
+        "name": "minimal.unreal.ucas",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.ucas",
+        "sha256": "150e5d444dc9001640f232bca39ec6a797df557a3500f4eb55c05410a7e38247"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unreal.utoc:Demo/Content/Meshes/Unit.uasset",
+      "verdict": "identical",
+      "resultDigest": "89035814e47d8bf4bfdc85b6ed1a13f7684e07d1f79effac8f586a00bab6f01c",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.unreal.utoc:Demo/Content/Config/DefaultGame.ini",
+      "verdict": "identical",
+      "resultDigest": "439fff0366de2dde143929c7e19729a821e562bf070948f296ce75177ebb6e9e",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unreal.utoc:Demo/Content/Meshes/Unit.uasset",
+        "synthetic:minimal.unreal.utoc:Demo/Content/Config/DefaultGame.ini"
+      ]
+    }
+  ]
+}

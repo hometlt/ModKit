@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "codec": "rtx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.raster-image-source",
+    "oracle": "the pixels written into each image of the synthetic texture, top-down RGBA",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:red.rtx:info",
+      "verdict": "identical",
+      "resultDigest": "84d29cfd86db2efc8d39ca68e4e8fa815d94e72561498a9af5731e2551e4a8d0",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:red.rtx:frame-0",
+      "verdict": "identical",
+      "resultDigest": "b82438ea6e292206b65502c5dee9b2a7ba21cad46c230e3981ec691fdb4fe449",
+      "mk3Operation": "common.view/raster-image-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rtx/operation/image.read",
+      "kind": "operation",
+      "legacyOperation": "image.read",
+      "adapterOperation": "view.raster-image-source",
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:red.rtx:info",
+        "synthetic:red.rtx:frame-0"
+      ]
+    }
+  ]
+}

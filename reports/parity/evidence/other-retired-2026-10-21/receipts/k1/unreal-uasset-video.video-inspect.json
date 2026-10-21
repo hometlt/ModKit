@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset-video",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the media export and the avih/strh records of the RIFF/AVI embedded in the sample",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.media.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.media.uasset",
+        "sha256": "ef0c903e6f397e6d600a01bf7b7b0bb7d77af8fd17f8071bfa574b9c712c5237"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.media.uasset:summary",
+      "verdict": "identical",
+      "resultDigest": "6770ee2ffd7338fccac194a46e5039c5bde97f5d2132028d2077052973a489f2",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.inspect",
+      "kind": "operation",
+      "legacyOperation": "video.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.media.uasset:summary"
+      ]
+    }
+  ]
+}

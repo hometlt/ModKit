@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-assets",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unitySerialized(UNITY_SAMPLE)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:CAB-cafe:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "d49bacbe6131e14b397d9f1aae37d849be8d8a843cf1b30c8d9af1d0e95f831f",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "executed": true,
+      "caseIds": ["synthetic:CAB-cafe:view.inspect"]
+    }
+  ]
+}

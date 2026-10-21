@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "codec": "uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.audio-media-source",
+    "oracle": "MK2's raw export — the RIFF/WAVE stream embedded in the sample, found by its header",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.soundwave.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.soundwave.uasset",
+        "sha256": "a0ae6817bebfbeae4a9ccc1be7d28805be785fc1c5b6ecc6d408de60b2330323"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.soundwave.uasset:wav",
+      "verdict": "identical",
+      "resultDigest": "584fd5345b2e63c75a160b962089db7640a2b30e08368ab515f6e368caa71513",
+      "mk3Operation": "common.view/audio-media-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
+      "kind": "operation",
+      "legacyOperation": "audio.export",
+      "adapterOperation": "view.audio-media-source",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.soundwave.uasset:wav"
+      ]
+    }
+  ]
+}

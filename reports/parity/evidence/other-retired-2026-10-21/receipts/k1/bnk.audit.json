@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "codec": "bnk",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/audiokinetic/wwise/codecs/bnk at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.bnk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.bnk",
+        "sha256": "82dbd486cee83b63e0eb25be2f5efd88041cd93df2bab2c80fbeac7055859025"
+      },
+      {
+        "name": "mk2 codecs/bnk/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/bnk/codec.manifest.json",
+        "sha256LF": "6ba5b3b0fb3345bb721489b2024945c01b1b184a67c01149d9550d8ca9f87649"
+      },
+      {
+        "name": "mk2 codecs/bnk/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/bnk/src/index.ts",
+        "sha256LF": "8e9e2010acc8cb0c5193cee65f92a618a5282f2e2daa67f73c16313d4c8246bb"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#BnkChunk+BnkInfo+parseBnk",
+      "verdict": "identical",
+      "resultDigest": "50ac0916ea14da4cfdcc0fb86d77d274b2e5e1a0621dd6cd910ba74d07726c16",
+      "mk3Operation": "bnk/bank.ts readBnk"
+    },
+    {
+      "id": "mk2-source:src/index.ts#BnkStream+extractBnkWemStreams",
+      "verdict": "identical",
+      "resultDigest": "584fd5345b2e63c75a160b962089db7640a2b30e08368ab515f6e368caa71513",
+      "mk3Operation": "container.extract <id>.wem"
+    },
+    {
+      "id": "mk2-source:src/index.ts#describeBnk+bnkCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "525480a0d613077fee71a29bd910e95724679e1fde97d9ed0192002dc90a43f1",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-source:src/index.ts#BnkHircObject+parseHircObjects+hircTypeName+scanUint32Refs",
+      "verdict": "identical",
+      "resultDigest": "c330f78ee771232ab757d1deabc801b1f7a08bfa45dad1a11b20ebdb945099b4",
+      "mk3Operation": "bnk/bank.ts readBnk objects (type names after wwiser AkBank__AKBKHircType_126: MK2 called 1 Settings, 3 EventAction, 5 RandomSequenceContainer, 7 ActorMixer, 8 AudioBus, 9 BlendContainer)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#BnkExternalStream+collectExternalStreams+scanExternalStreamCandidates",
+      "verdict": "identical",
+      "resultDigest": "a01a75ebc28ba3398681ec8d4868a558f137ef8145d130a9e1bb840699148c0f",
+      "mk3Operation": "bnk/bank.ts Sound sources, read exactly for versions 113-126 (MK2 guessed any u32 above 255 of a Sound); streamed media is the PCK's <language>/<id>.wem"
+    },
+    {
+      "id": "mk2-source:src/index.ts#bnkCodec.export+selectedWemStream",
+      "verdict": "identical",
+      "resultDigest": "9bf794896f7bb6337b8b3aaa2a2e3e5fcc25f9d5e2e1baa873ce288741c41fc1",
+      "mk3Operation": "target 'bnk': the package entry (container.extract of wwise-pck); 'wem' by id: container.extract <id>.wem; other targets: the audio source, then export.convert of the nested WEM"
+    },
+    {
+      "id": "mk2-source:src/index.ts#selectedWemStream(audio-bank-empty)",
+      "verdict": "identical",
+      "resultDigest": "bc332f891899bdbdb7859fb4549b2dab8af0104ec2ede2eb0c61b6987aff9eaf",
+      "mk3Operation": "a bank without DIDX has no entries and publishes no audio source"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "fcd96882d7d2a6e2bf8eb824afccaf19fcf425ed0228b46bdd00919dbeb4a791",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "6e41b54238a5b1b7b1b7a7ca00275debfe239554208c7683c42efb8703168246",
+      "mk3Operation": "view.inspect, common.view/audio-media-source, container.extract, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/bnk/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#BnkChunk+BnkInfo+parseBnk",
+        "mk2-source:src/index.ts#BnkStream+extractBnkWemStreams",
+        "mk2-source:src/index.ts#describeBnk+bnkCodec.describe",
+        "mk2-source:src/index.ts#BnkHircObject+parseHircObjects+hircTypeName+scanUint32Refs",
+        "mk2-source:src/index.ts#BnkExternalStream+collectExternalStreams+scanExternalStreamCandidates",
+        "mk2-source:src/index.ts#bnkCodec.export+selectedWemStream",
+        "mk2-source:src/index.ts#selectedWemStream(audio-bank-empty)",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

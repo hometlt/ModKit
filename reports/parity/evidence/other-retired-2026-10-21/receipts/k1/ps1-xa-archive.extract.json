@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "codec": "ps1-xa",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "MK2 openPs1FatReader(fat, path, 'xa'): each DATA.XA entry is its FAT size from sector * 2336",
+    "suite": "modkit-extensions-other/test/behavior/k1-ps1-receipts.test.ts",
+    "samples": [
+      {
+        "name": "DATA.XA",
+        "builder": "modkit-extensions-other/test/behavior/ps1-fixtures.ts#xa"
+      },
+      {
+        "name": "DATA.FAT",
+        "builder": "modkit-extensions-other/test/behavior/ps1-fixtures.ts#westwoodFat"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:DATA.XA+DATA.FAT:container.extract",
+      "verdict": "identical",
+      "resultDigest": "f76284b7a101facab8fad8291e27172cf5d100b4c5b544b732c443194556bd00",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "executed": true,
+      "caseIds": ["synthetic:DATA.XA+DATA.FAT:container.extract"]
+    }
+  ]
+}

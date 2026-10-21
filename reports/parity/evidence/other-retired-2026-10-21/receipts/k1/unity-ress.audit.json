@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-ress",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/unity/engine/codecs/unity-ress at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-audit-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-cafe.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#SAMPLE_PIXELS.ress",
+        "sha256": "95336db1f61d6507a15e82d7ddc943538ec887de64f5ecc71a58e265ca42de36"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-ress/codec.manifest.json",
+        "sha256LF": "bb8d9d8bc861ed17fee0612505e0aad8c9e73a5afc0e46b7e045f83981b48239"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-ress/src/index.ts",
+        "sha256LF": "60495daf337026ceb36ccd7e3a7e760f6a7ffb6f537a154f5989430407f11a14"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:default unityRessCodec#open",
+      "verdict": "identical",
+      "resultDigest": "6e1e2551bfa1eb170151b31069b01f2b192f56ea30f0045bed33253264aa063d",
+      "mk3Operation": "common.view/namespace-entry-source, container.extract"
+    },
+    {
+      "id": "mk2-source:companionName+default unityRessCodec#describe",
+      "verdict": "identical",
+      "resultDigest": "ae6e76d90c6a4f3bc54fc77c1d471f8a6779edeeded27b6ae90df552b63f9926",
+      "mk3Operation": "planInput: the serialized companion the host binds beside the stream"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "3c1c72f04bac560b12aa52fe58bb5449dd47c758d35bc1249034722a2335da3e",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-ress/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-ress.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:default unityRessCodec#open",
+        "mk2-source:companionName+default unityRessCodec#describe",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

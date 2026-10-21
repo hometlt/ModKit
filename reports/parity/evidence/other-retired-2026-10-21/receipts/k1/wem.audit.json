@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "codec": "wem",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.wem",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.wem",
+        "sha256": "70ddc4707a27d725d7686eaf2c4ecd194b2bc34a06d1110edf938e465ffff716"
+      },
+      {
+        "name": "mk2 codecs/wem/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/codec.manifest.json",
+        "sha256LF": "b5f7891b4bddf2ad3e960644fead0c996a31d41d67eb4201a133f40ddd5e41de"
+      },
+      {
+        "name": "mk2 codecs/wem/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/src/index.ts",
+        "sha256LF": "c47b22dec7a68c96dced96f3117a1c403e68acde008c3a882ce66933a7f56849"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#WemInfo+parseWem",
+      "verdict": "identical",
+      "resultDigest": "49c542946c4c5fbfa311df0f374a394d741837ba3f54f4239f93e322df75254a",
+      "mk3Operation": "wem/wem.ts readWem"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseWem(RIFX)",
+      "verdict": "identical",
+      "resultDigest": "8a4d1cfb29acf4966df592ed0b242b216be6126bf54d6be75cc9ba10a8fcab76",
+      "mk3Operation": "wem/wem.ts readWem (big-endian)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#isWemRiff+wemCodec.sniff",
+      "verdict": "identical",
+      "resultDigest": "b37f57ccdf81ab241bbc5e603a3bfed7252df162b57b5790a9906d1ace109f74",
+      "mk3Operation": "wem/wem.ts isWem (detect)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#describeWem+wemCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "906276fdfe44413b83fdcea2ef2e6db91b97d8dc54796d8f2da840d9da03729b",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-source:src/index.ts#wwiseCodecName",
+      "verdict": "identical",
+      "resultDigest": "68252dce84127657ae3cbff4d7702b248837cbb992fdce62d675551c1f1fd489",
+      "mk3Operation": "wem/wem.ts CODECS, named after vgmstream meta/wwise.c: MK2 called 0x0002 ms-adpcm, 0xFFFE wwise-extensible and 0x3041 wwise-opus"
+    },
+    {
+      "id": "mk2-source:src/index.ts#wemCodec.export",
+      "verdict": "identical",
+      "resultDigest": "3d21708676488733ce06868dc88b23c09213e6498c20770b6dac835f1c756df0",
+      "mk3Operation": "export.raw (MK2 target 'wem') and export.convert (MK2's transcoder targets)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "fc25a913951646d4891643fda71c5905484bfc36d3e683fd5cb95659abc867fc",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "537bb7d9859c7e81060cae919cc24f17e9c14c514a8f6925541e2bfa0123b2fd",
+      "mk3Operation": "view.inspect, export.raw, export.convert, common.view/audio-media-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wem/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#WemInfo+parseWem",
+        "mk2-source:src/index.ts#parseWem(RIFX)",
+        "mk2-source:src/index.ts#isWemRiff+wemCodec.sniff",
+        "mk2-source:src/index.ts#describeWem+wemCodec.describe",
+        "mk2-source:src/index.ts#wwiseCodecName",
+        "mk2-source:src/index.ts#wemCodec.export",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

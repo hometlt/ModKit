@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "rsh",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the size, image count and encoding written into the synthetic texture",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "shader.rsh",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rshSample",
+        "sha256": "36422fbd4e85256def1989534a92d9e3773197b749732b945fe733ac5fff876f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:shader.rsh:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "792b49ee1ffa3553f98a525268aa4a58cdc3fee51364ea41bedf00db0ac408e3",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:shader.rsh:view.inspect"
+      ]
+    }
+  ]
+}

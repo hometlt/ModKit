@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset-video",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.media.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.media.uasset",
+        "sha256": "ef0c903e6f397e6d600a01bf7b7b0bb7d77af8fd17f8071bfa574b9c712c5237"
+      },
+      {
+        "name": "Demo.pak (a FileMediaSource naming ./Movies/Intro.mp4, and that file)",
+        "builder": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts#mediaPak",
+        "sha256": "008e22362dfad42dbddd46fec1f86060822e3dd6cb67b7ba985af962aa503258"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-video/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/codec.manifest.json",
+        "sha256LF": "7d38769b3b622e50d008419a7f39b755ad6c1d2ec66dc6958d2073dd19e07380"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-video/src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
+        "sha256LF": "133052e1c0d63d7bd360578b86df560fffc42b46184e1434c888c24d013adfb4"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-video/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
+        "sha256LF": "152ad783905ac32b3485d752db8ccfca1ff8d5702aea95e78c88fd6c0094bea7"
+      },
+      {
+        "name": "mk2 codecs/unreal-uasset-video/src/unreal-media.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
+        "sha256LF": "0bfbca02c458b550ddc2e86a0f083130f070af602a7efdb8b9f0d81261a64db0"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts#detectHeader+src/unreal-media.ts#MEDIA_CLASS_RE",
+      "verdict": "identical",
+      "resultDigest": "0d18a956df8effe00e216c46f25cb7fae5c770e14e5ae96a13a9411b1a0a2cbb",
+      "mk3Operation": "unreal-uasset-video/video-codec.ts MEDIA_CLASSES (packageClassProbe)"
+    },
+    {
+      "id": "mk2-source:src/unreal-media.ts#extractUnrealMedia",
+      "verdict": "identical",
+      "resultDigest": "9bb42f4ede8a08162131f465e53b501abd9d7a431bb5bf64bb42f18b423aef3d",
+      "mk3Operation": "unreal-uasset-video/video-codec.ts: the stream as the entry <export>.<ext> (container.extract)"
+    },
+    {
+      "id": "mk2-source:src/unreal-media.ts#findEmbeddedVideo",
+      "verdict": "identical",
+      "resultDigest": "89b2e4ccc9957742cebe48138a54aa62bf82514a2772eb128a87ff62430df750",
+      "mk3Operation": "shared/embedded-media.ts findEmbeddedVideo"
+    },
+    {
+      "id": "mk2-source:src/unreal-media.ts#extractMediaReferences",
+      "verdict": "identical",
+      "resultDigest": "7936deea36ed9fcea34eb7ac7fef58ced99c872e2d52948c49b0b0837bcf34e8",
+      "mk3Operation": "shared/embedded-media.ts mediaReferences"
+    },
+    {
+      "id": "mk2-source:src/unreal-media.ts#unrealMediaReferenceCandidates (external media files)",
+      "verdict": "identical",
+      "resultDigest": "75f8339e2346231c16ef302b74e2d3ff2c96aa0437d71763104aaa919e05786d",
+      "mk3Operation": "unreal-uasset-video/video-codec.ts: the named file mapped as MK2 mapped it, an entry found on request (entry table find → namespace lookup, container.extract) read through the host logical resources (host route, pak entry)"
+    },
+    {
+      "id": "mk2-source:src/unreal-media.ts#extractUnrealMediaFrame",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "view.video-media-source readFrame over the host decoder (receipt unreal-uasset-video.video-extract)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "859a2a110fac7a2da278d8de4933951412a3c70a7dc370a096fee3efd6d547df",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "e7246c062965eb14730a239c54a898067d8bc69b512307bfc31ca09a4a62ac63",
+      "mk3Operation": "view.inspect, container.extract, common.view/video-media-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset-video/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts#detectHeader+src/unreal-media.ts#MEDIA_CLASS_RE",
+        "mk2-source:src/unreal-media.ts#extractUnrealMedia",
+        "mk2-source:src/unreal-media.ts#findEmbeddedVideo",
+        "mk2-source:src/unreal-media.ts#extractMediaReferences",
+        "mk2-source:src/unreal-media.ts#unrealMediaReferenceCandidates (external media files)",
+        "mk2-source:src/unreal-media.ts#extractUnrealMediaFrame",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

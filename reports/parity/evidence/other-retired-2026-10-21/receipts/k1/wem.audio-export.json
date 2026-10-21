@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "wem",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "export.convert",
+    "oracle": "the WEM's own PCM (MK2 exported it through an injected transcoder): a canonical WAV of the same format and samples",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.wem",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.wem",
+        "sha256": "70ddc4707a27d725d7686eaf2c4ecd194b2bc34a06d1110edf938e465ffff716"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.wem:export.convert",
+      "verdict": "identical",
+      "resultDigest": "b600879e8309d43fa43a89d6404c1aaf276f2a8ae81e27da07e972feacb2f51d",
+      "mk3Operation": "export.convert { target: wav }"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wem/operation/audio.export",
+      "kind": "operation",
+      "legacyOperation": "audio.export",
+      "adapterOperation": "export.convert",
+      "targetOperation": "export.convert",
+      "handlerId": "convert-audio",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.wem:export.convert"]
+    }
+  ]
+}

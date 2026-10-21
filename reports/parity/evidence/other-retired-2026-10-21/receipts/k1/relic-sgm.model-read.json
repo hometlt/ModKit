@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-sgm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the mesh positions and winding written into the synthetic SGM, in MK2's Z-up",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "sgm_marine.sgm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#sgmSample",
+        "sha256": "deccf8195bce5411593fbc71a3ec7615b0137afed73bd877d2c171ee23ed0f89"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:sgm_marine.sgm:info",
+      "verdict": "identical",
+      "resultDigest": "0bcedb8a543bb9e048fc8a645071aba392c1c1582a36e60cd7d67fe51bfa35d1",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:sgm_marine.sgm:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "6c207208bf459682a012a4ff7c21cda3e3c4e0cf71d506241bdfb19be39fa025",
+      "mk3Operation": "common.view/model-scene-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sgm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:sgm_marine.sgm:info",
+        "synthetic:sgm_marine.sgm:primitive-0"
+      ]
+    }
+  ]
+}

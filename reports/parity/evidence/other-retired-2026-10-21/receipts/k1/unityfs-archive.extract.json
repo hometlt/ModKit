@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "codec": "unityfs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-receipts.test.ts",
+    "samples": [
+      {
+        "name": "lz4hc.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs"
+      },
+      {
+        "name": "lzma.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:lz4hc.unity3d:CAB-cafe:container.extract",
+      "verdict": "identical",
+      "resultDigest": "2b120d9c62f04ed6274f7cd9331d7704da6adfa859e6377ae2c3294b89eacaca",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:lz4hc.unity3d:CAB-cafe.resS:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ed8d897d14f6f2a70d1abe7184814569cd5197fc881e7579bede852a844d59f0",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:lzma.unity3d:CAB-one:container.extract",
+      "verdict": "identical",
+      "resultDigest": "d409714f8787bf6c3ae495bfd7281472e53b3b00f57ef204923b710f12493e4c",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:lzma.unity3d:CAB-one.resS:container.extract",
+      "verdict": "identical",
+      "resultDigest": "864be965ba948f2b6c769511c3b1e4ed04939d5cf31d009c03c9aec206fc8307",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:lz4hc.unity3d:CAB-cafe:container.extract",
+        "synthetic:lz4hc.unity3d:CAB-cafe.resS:container.extract",
+        "synthetic:lzma.unity3d:CAB-one:container.extract",
+        "synthetic:lzma.unity3d:CAB-one.resS:container.extract"
+      ]
+    }
+  ]
+}

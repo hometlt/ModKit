@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "codec": "age-bar",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.age-bar",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.age-bar",
+        "sha256": "7ce649ea89fa22065175c73a34d233af3ac7d98588e98a615bef85faf40033d9"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.age-bar:art/data/proto.xmb:container.extract",
+      "verdict": "identical",
+      "resultDigest": "f23fc5cc72481864dc02a2c4cec2e6e70e751ac7a459430bf4e32a04faafee26",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.age-bar:art/strings/help.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "8b17302b6a5b5220ddd5b6a158b711a4717d0c31e69f80b567a554a61925ced9",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:minimal.age-bar:art/textures/icon.ddt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "65ee60b2deb344480ee9a6417141e016f2122b08b5a44808fe8dfc4244e7fff0",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-bar.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.age-bar:art/data/proto.xmb:container.extract",
+        "synthetic:minimal.age-bar:art/strings/help.txt:container.extract",
+        "synthetic:minimal.age-bar:art/textures/icon.ddt:container.extract"
+      ]
+    }
+  ]
+}

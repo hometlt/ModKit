@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "bnk",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.audio-media-source",
+    "oracle": "MK2's export of the first embedded WEM (its transcoder's WAV): the stream's own PCM in a canonical WAV",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.bnk",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.bnk",
+        "sha256": "82dbd486cee83b63e0eb25be2f5efd88041cd93df2bab2c80fbeac7055859025"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.bnk:audio-media-source",
+      "verdict": "identical",
+      "resultDigest": "250855542dd2cda9cf7f7bf78b12400111857f3fdba4611cb32adacddec59ccf",
+      "mk3Operation": "common.view/audio-media-source encoded"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
+      "kind": "operation",
+      "legacyOperation": "audio.export",
+      "adapterOperation": "view.audio-media-source",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.bnk:audio-media-source"]
+    }
+  ]
+}

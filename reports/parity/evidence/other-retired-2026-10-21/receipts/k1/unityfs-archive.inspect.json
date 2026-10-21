@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "unityfs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-receipts.test.ts",
+    "samples": [
+      {
+        "name": "lz4hc.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs"
+      },
+      {
+        "name": "lzma.unity3d",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityFs"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:lz4hc.unity3d:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "b9bfa244b4ec6cb36d1ea5609e84c872f6d458eeef4cea390329971087afc834",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:lzma.unity3d:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "94ef70d5e3b1d340f9b8eff7bdc774ac635bb2b47e964232e8d16c5887817962",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unityfs.json",
+      "executed": true,
+      "caseIds": ["synthetic:lz4hc.unity3d:view.inspect", "synthetic:lzma.unity3d:view.inspect"]
+    }
+  ]
+}

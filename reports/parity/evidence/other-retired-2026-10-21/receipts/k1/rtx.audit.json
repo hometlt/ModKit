@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "codec": "rtx",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/rtx at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      },
+      {
+        "name": "red.rgt",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rgtSample",
+        "sha256": "e831eb4862081934199898384bc0410845677dbd46d55e14f87ced45af15b4d8"
+      },
+      {
+        "name": "shader.rsh",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rshSample",
+        "sha256": "36422fbd4e85256def1989534a92d9e3773197b749732b945fe733ac5fff876f"
+      },
+      {
+        "name": "default.wtp",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#wtpSample",
+        "sha256": "cc87b4cb63a5eb4c138ec9a974e5317682b47516bb7e74d890af61bc88f94c1b"
+      },
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      },
+      {
+        "name": "image.rrtex",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rrtexSample",
+        "sha256": "481f1db1d9fefe32d375fa2d025f3d2c23b3ef506e37662138e1640c3c55ab1f"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rtx/codec.manifest.json",
+        "sha256LF": "0bc13b8f1295e8fd956b68bc39ce36c95cf7914f70b41cf4efe7a446696493f3"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rtx/src/detect.ts",
+        "sha256LF": "2154c32ad71183b8bca1d1410c6422bb5b42980965c3bd87c2422db3c98534bc"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rtx/src/index.ts",
+        "sha256LF": "2ff106cba3d03ba79cb5d13e8584cfc923efbd8730de528f1aaf8407f7fc222e"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "c120e855d691467262101228b83c658958ae8353dbe3946fcd69275dbd58d1ee",
+      "mk3Operation": "probe (rtx manifest probe plan) over red.rtx, red.rgt, shader.rsh, default.wtp, model.whm, image.rrtex"
+    },
+    {
+      "id": "mk2-source:src/index.ts#rtxCodec",
+      "verdict": "identical",
+      "resultDigest": "8c77ef3012683ef39467f5c459bcf33db3c742c6efd6a0bd75a1642239f4297d",
+      "mk3Operation": "view.inspect, common.view/raster-image-source"
+    },
+    {
+      "id": "mk2-source:src/index.ts#rtxCodec.encode",
+      "verdict": "identical",
+      "resultDigest": "5417107451e46d28ab9c178f33a83cce310a4fb85b9290b3580d364aade036d8",
+      "mk3Operation": "not carried (planned: DXT5 encoder codec-kit/texture/bc-encode + one writer through the write plan, task T-DXT)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "e6affe06f72883c843ce1433f5edb0a5730f98f07e541ed1b0ca3059d04d4303",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "165882623614e0d005e94f2616148a152576d1fdf480de184cc07f7d5275b30d",
+      "mk3Operation": "view.inspect, common.view/raster-image-source, not carried (planned, task T-DXT)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rtx/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rtx.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:src/index.ts#rtxCodec",
+        "mk2-source:src/index.ts#rtxCodec.encode",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

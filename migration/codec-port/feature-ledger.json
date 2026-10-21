@@ -106,6 +106,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-bar-archive.extract.json",
+          "sha256": "843324cc092c80bc5b44fc53be9283c01dd9ab7bec331914c1e8eb050fbe63e0",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.extract.json",
           "sha256": "843324cc092c80bc5b44fc53be9283c01dd9ab7bec331914c1e8eb050fbe63e0"
         }
       ],
@@ -116,6 +122,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-bar-archive.inspect.json",
+          "sha256": "6124ca1e2003bf10a5d17417f4de2b4b9c99d687bb411b0cab4276175af0dd23",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-bar-archive.inspect.json",
           "sha256": "6124ca1e2003bf10a5d17417f4de2b4b9c99d687bb411b0cab4276175af0dd23"
         }
       ],
@@ -145,6 +157,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.extract.json",
+          "sha256": "50a47df976ca1e43bfed555653fce997f512b9e74f520583cb1602020f982e51",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.extract.json",
           "sha256": "50a47df976ca1e43bfed555653fce997f512b9e74f520583cb1602020f982e51"
         }
       ],
@@ -162,6 +180,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/age-drs-archive.inspect.json",
+          "sha256": "cd1cdbe18a36b1aa8b1a8b4debbdd208aed1a593accd4deea7ee235e6c8db268",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/age-drs-archive.inspect.json",
           "sha256": "cd1cdbe18a36b1aa8b1a8b4debbdd208aed1a593accd4deea7ee235e6c8db268"
         }
       ],
@@ -392,6 +416,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/bnk.audit.json",
+          "sha256": "dbba747dac9c9cb24bcc440810235f4ba3924c431c231c44251d59686b6d77f3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audit.json",
           "sha256": "dbba747dac9c9cb24bcc440810235f4ba3924c431c231c44251d59686b6d77f3"
         }
       ],
@@ -402,6 +432,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-export.json",
+          "sha256": "873b38b5592f12852aaead291f93b1c780cf875df6217f59f35ef88e0b4e7eaa",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-export.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-export.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-export.json",
           "sha256": "873b38b5592f12852aaead291f93b1c780cf875df6217f59f35ef88e0b4e7eaa"
         }
       ],
@@ -412,6 +448,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-extract.json",
+          "sha256": "17116b98ca83404bc3937aed594f2c5fc279aeef24527fbf89245a4106182f3e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-extract.json",
           "sha256": "17116b98ca83404bc3937aed594f2c5fc279aeef24527fbf89245a4106182f3e"
         }
       ],
@@ -422,6 +464,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/bnk.audio-inspect.json",
+          "sha256": "f7d8f74850bde6eea1f83ded4e6173841edda43f8d4955a004097b1f7ed09941",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/bnk.audio-inspect.json",
           "sha256": "f7d8f74850bde6eea1f83ded4e6173841edda43f8d4955a004097b1f7ed09941"
         }
       ],
@@ -1028,6 +1076,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-par.audit.json",
+          "sha256": "586ea367881f5151ca570a2d1b0069cf5fdbf5257aa5fb7c733c23ace4e1f9e9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par.audit.json",
           "sha256": "586ea367881f5151ca570a2d1b0069cf5fdbf5257aa5fb7c733c23ace4e1f9e9"
         }
       ],
@@ -1038,6 +1092,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-par-archive.extract.json",
+          "sha256": "6d323a9876ce5ea42de1b322565cf574903d6fb00f95fad97c7fca1b1feb6bc4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.extract.json",
           "sha256": "6d323a9876ce5ea42de1b322565cf574903d6fb00f95fad97c7fca1b1feb6bc4"
         }
       ],
@@ -1048,6 +1108,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-par-archive.inspect.json",
+          "sha256": "5c1857cd161106a535ab3dc81f05c9a275b8339970556f33adb7967db4a5ad97",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-par-archive.inspect.json",
           "sha256": "5c1857cd161106a535ab3dc81f05c9a275b8339970556f33adb7967db4a5ad97"
         }
       ],
@@ -1058,6 +1124,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-res.audit.json",
+          "sha256": "924119f8f3c49bd7570ee67bd6c7f86f611f437d32e4ac4dcf769b19dc706447",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res.audit.json",
           "sha256": "924119f8f3c49bd7570ee67bd6c7f86f611f437d32e4ac4dcf769b19dc706447"
         }
       ],
@@ -1068,6 +1140,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-res-archive.inspect.json",
+          "sha256": "a28ebecd7299d189a5277f87522c2cc58d747996dc025391901bb31745c50183",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-res-archive.inspect.json",
           "sha256": "a28ebecd7299d189a5277f87522c2cc58d747996dc025391901bb31745c50183"
         }
       ],
@@ -1078,6 +1156,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-tex.audit.json",
+          "sha256": "40605f0c7a79bf0c2b2c48411a33697a60833385698956f4f45d9e6c5e135c19",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.audit.json",
           "sha256": "40605f0c7a79bf0c2b2c48411a33697a60833385698956f4f45d9e6c5e135c19"
         }
       ],
@@ -1088,6 +1172,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-tex.image-inspect.json",
+          "sha256": "65b0de795ac655616252e190dbf499768d503f8d39acbb3ebdb650cb3cc07f55",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-inspect.json",
           "sha256": "65b0de795ac655616252e190dbf499768d503f8d39acbb3ebdb650cb3cc07f55"
         }
       ],
@@ -1098,6 +1188,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth-tex.image-read.json",
+          "sha256": "b5dd398fc6144a0568e4109b17d2c875fa6699c54e74b5d5743f1c4d0e6d1d08",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth-tex.image-read.json",
           "sha256": "b5dd398fc6144a0568e4109b17d2c875fa6699c54e74b5d5743f1c4d0e6d1d08"
         }
       ],
@@ -1108,6 +1204,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.audit.json",
+          "sha256": "2aecc773a6ec3476355f038590dacedb40cee8ff8702d5be065a770a5af090ec",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.audit.json",
           "sha256": "2aecc773a6ec3476355f038590dacedb40cee8ff8702d5be065a770a5af090ec"
         }
       ],
@@ -1118,14 +1220,32 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.json",
-          "sha256": "c27639d8cc9d1c60d25fa615a613a28b2f8cb34bd164396f1e4407bed91d8be9"
+          "sha256": "c27639d8cc9d1c60d25fa615a613a28b2f8cb34bd164396f1e4407bed91d8be9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.r2.json",
-          "sha256": "ff81f2a3e45c6478ccd98fd14665bd9a545ba45be6938f7555783ac64ebce71d"
+          "sha256": "ff81f2a3e45c6478ccd98fd14665bd9a545ba45be6938f7555783ac64ebce71d",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r2.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-read.r3.json",
+          "sha256": "ca0e603d865b9dc48730306d85a904c67433a482c0d0cefcf8faf1ab21e5a2ca",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r3.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r3.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.json",
+          "sha256": "c27639d8cc9d1c60d25fa615a613a28b2f8cb34bd164396f1e4407bed91d8be9"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r2.json",
+          "sha256": "ff81f2a3e45c6478ccd98fd14665bd9a545ba45be6938f7555783ac64ebce71d"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-read.r3.json",
           "sha256": "ca0e603d865b9dc48730306d85a904c67433a482c0d0cefcf8faf1ab21e5a2ca"
         }
       ],
@@ -1136,6 +1256,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/earth2160-model.model-render.json",
+          "sha256": "ac5acac1474f6c8333e0a1bd2748eb00e51fabb0752d060e9492b7a3ab462625",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/earth2160-model.model-render.json",
           "sha256": "ac5acac1474f6c8333e0a1bd2748eb00e51fabb0752d060e9492b7a3ab462625"
         }
       ],
@@ -1350,6 +1476,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/fsb.audit.json",
+          "sha256": "c2d85b1e82a1f33e8e57f9ef60c8637d3bc3cfe41fa6b23b87b4aa3025d35461",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audit.json",
           "sha256": "c2d85b1e82a1f33e8e57f9ef60c8637d3bc3cfe41fa6b23b87b4aa3025d35461"
         }
       ],
@@ -1360,6 +1492,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-decode.json",
+          "sha256": "40cd4769d4b001697a37529531ce74604d233ce27c4d31b06f9149b9c11c7c94",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-decode.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-decode.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-decode.json",
           "sha256": "40cd4769d4b001697a37529531ce74604d233ce27c4d31b06f9149b9c11c7c94"
         }
       ],
@@ -1370,6 +1508,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-export.json",
+          "sha256": "01bbf68df3e156d0d6790523ee0bc854e88391586cc8307b19283738a49a9383",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-export.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-export.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-export.json",
           "sha256": "01bbf68df3e156d0d6790523ee0bc854e88391586cc8307b19283738a49a9383"
         }
       ],
@@ -1380,6 +1524,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/fsb.audio-inspect.json",
+          "sha256": "f8545054dc47d689d4b4910b0174fb3babd6c2e74acc6082617bc0d7724b6c62",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/fsb.audio-inspect.json",
           "sha256": "f8545054dc47d689d4b4910b0174fb3babd6c2e74acc6082617bc0d7724b6c62"
         }
       ],
@@ -1912,10 +2062,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-read.json",
-          "sha256": "d6a8c912b0e73c4184815c5bfc5388d87b61f0fd1585fde00f17ad2f11485b88"
+          "sha256": "d6a8c912b0e73c4184815c5bfc5388d87b61f0fd1585fde00f17ad2f11485b88",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-read.r2.json",
+          "sha256": "1c2355a0f55d32729ef0883660360c9160db6a46c9a3f9c3ab60ec2e52a7fe97",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.json",
+          "sha256": "d6a8c912b0e73c4184815c5bfc5388d87b61f0fd1585fde00f17ad2f11485b88"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-read.r2.json",
           "sha256": "1c2355a0f55d32729ef0883660360c9160db6a46c9a3f9c3ab60ec2e52a7fe97"
         }
       ],
@@ -1926,6 +2088,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/grey-goo-alo.model-render.json",
+          "sha256": "823e1aa8ac5cf4051032d888f46ea2056f2c564bb9c0fb5534b5d6c5d89e7d2f",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/grey-goo-alo.model-render.json",
           "sha256": "823e1aa8ac5cf4051032d888f46ea2056f2c564bb9c0fb5534b5d6c5d89e7d2f"
         }
       ],
@@ -1961,6 +2129,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/halo-era-archive.extract.json",
+          "sha256": "5bc91f60d3377b539d9d28bb282ea6bec3246fdf95224b7339f2d2c7f764c3c2",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.extract.json",
           "sha256": "5bc91f60d3377b539d9d28bb282ea6bec3246fdf95224b7339f2d2c7f764c3c2"
         }
       ],
@@ -1971,6 +2145,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/halo-era-archive.inspect.json",
+          "sha256": "01ecf21d0df57eef904e060712d1b606706a4f30b8c344e2a2673c3fbf7e64e7",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/halo-era-archive.inspect.json",
           "sha256": "01ecf21d0df57eef904e060712d1b606706a4f30b8c344e2a2673c3fbf7e64e7"
         }
       ],
@@ -2025,6 +2205,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.extract.json",
+          "sha256": "f070df37f9bd2234736d583044f8cc3efca54ad8e4a908947a3388e3e527a206",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.extract.json",
           "sha256": "f070df37f9bd2234736d583044f8cc3efca54ad8e4a908947a3388e3e527a206"
         }
       ],
@@ -2042,6 +2228,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/heroes3-lod-archive.inspect.json",
+          "sha256": "55b30727494b55279eb28e5a78f63bca736d2842a1dd3686f53deab9b26db19f",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/heroes3-lod-archive.inspect.json",
           "sha256": "55b30727494b55279eb28e5a78f63bca736d2842a1dd3686f53deab9b26db19f"
         }
       ],
@@ -3140,6 +3332,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg.audit.json",
+          "sha256": "1dd223e994fa38d43f97f4c3983236fd0feb0323caac18cc411ca895f0a39b48",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg.audit.json",
           "sha256": "1dd223e994fa38d43f97f4c3983236fd0feb0323caac18cc411ca895f0a39b48"
         }
       ],
@@ -3150,6 +3348,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg-archive.extract.json",
+          "sha256": "57fee9a5a93857eaa84cc744009de5f41bdef1796f261b5aa05dc311405c0233",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.extract.json",
           "sha256": "57fee9a5a93857eaa84cc744009de5f41bdef1796f261b5aa05dc311405c0233"
         }
       ],
@@ -3160,6 +3364,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/petroglyph-meg-archive.inspect.json",
+          "sha256": "72d06e3bfbebb10d114d9b0dcf644d4d0bc9650c9a70dbb6e32b950d7805dd79",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/petroglyph-meg-archive.inspect.json",
           "sha256": "72d06e3bfbebb10d114d9b0dcf644d4d0bc9650c9a70dbb6e32b950d7805dd79"
         }
       ],
@@ -3270,6 +3480,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ps1-cue-bin-archive.extract.json",
+          "sha256": "277a4dcb971b32ab8fbf7a5851b6f33c1a4b0bf649f18f9b629cd0fc8d6e9fa2",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.extract.json",
           "sha256": "277a4dcb971b32ab8fbf7a5851b6f33c1a4b0bf649f18f9b629cd0fc8d6e9fa2"
         }
       ],
@@ -3280,6 +3496,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ps1-cue-bin-archive.inspect.json",
+          "sha256": "f52daf5b027cc749241608fe7cfc54ec55a9f00c8fc4fb4c4671505e819ffdb4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-cue-bin-archive.inspect.json",
           "sha256": "f52daf5b027cc749241608fe7cfc54ec55a9f00c8fc4fb4c4671505e819ffdb4"
         }
       ],
@@ -3290,6 +3512,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ps1-xa.audit.json",
+          "sha256": "4033d05c460a0f299a42c6ad72ddd40bf37f708929d5e63e27b4e1172ab7d05b",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa.audit.json",
           "sha256": "4033d05c460a0f299a42c6ad72ddd40bf37f708929d5e63e27b4e1172ab7d05b"
         }
       ],
@@ -3300,6 +3528,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ps1-xa-archive.extract.json",
+          "sha256": "eff2a92ae484611442a2f1a9c6fc7e34e44a45916876f1240ffdc9df2e5764ba",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.extract.json",
           "sha256": "eff2a92ae484611442a2f1a9c6fc7e34e44a45916876f1240ffdc9df2e5764ba"
         }
       ],
@@ -3310,6 +3544,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/ps1-xa-archive.inspect.json",
+          "sha256": "460d0ca65a702d824ada373cefdfa8c8a537dcbbd34ab1dba378c3b5125a2e08",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/ps1-xa-archive.inspect.json",
           "sha256": "460d0ca65a702d824ada373cefdfa8c8a537dcbbd34ab1dba378c3b5125a2e08"
         }
       ],
@@ -3460,6 +3700,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sga.audit.json",
+          "sha256": "41c7eb0662d5b702b28bf408d5fb61bfceb3967a275754533a80d740c1f3eb8d",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.audit.json",
           "sha256": "41c7eb0662d5b702b28bf408d5fb61bfceb3967a275754533a80d740c1f3eb8d"
         }
       ],
@@ -3470,6 +3716,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sga.archive-extract.json",
+          "sha256": "df15f690dfe7d0431f05b2cae95f5bb07c30f944d1aa945ac7c9e7ff48d6a92d",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-extract.json",
           "sha256": "df15f690dfe7d0431f05b2cae95f5bb07c30f944d1aa945ac7c9e7ff48d6a92d"
         }
       ],
@@ -3480,6 +3732,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sga.archive-inspect.json",
+          "sha256": "879ee45d67f40ca576a5fb10b92bfc7ceda79304289bf9f2f5a0b8ea5157221f",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sga.archive-inspect.json",
           "sha256": "879ee45d67f40ca576a5fb10b92bfc7ceda79304289bf9f2f5a0b8ea5157221f"
         }
       ],
@@ -3490,6 +3748,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.audit.json",
+          "sha256": "90da6c95629b20c6e08a6a5dc4fdb26a3bad9818574a562ed5435e8f82924ec2",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.audit.json",
           "sha256": "90da6c95629b20c6e08a6a5dc4fdb26a3bad9818574a562ed5435e8f82924ec2"
         }
       ],
@@ -3500,6 +3764,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.model-read.json",
+          "sha256": "e0bf88426d47651cd295ab866f8d0bbbfb57ebc0e62b58c725da8e9c80eab7ce",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-read.json",
           "sha256": "e0bf88426d47651cd295ab866f8d0bbbfb57ebc0e62b58c725da8e9c80eab7ce"
         }
       ],
@@ -3510,6 +3780,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-sgm.model-render.json",
+          "sha256": "14b97abc14991476ef29e4094c16d541bfe46f9f3fe68e8697136a98d09b331c",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-sgm.model-render.json",
           "sha256": "14b97abc14991476ef29e4094c16d541bfe46f9f3fe68e8697136a98d09b331c"
         }
       ],
@@ -3520,6 +3796,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-ucs.audit.json",
+          "sha256": "e465f383056923cdba12d47f95a68910a9375a7eed2a041a3cfa1f8780b1f850",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-ucs.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-ucs.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-ucs.audit.json",
           "sha256": "e465f383056923cdba12d47f95a68910a9375a7eed2a041a3cfa1f8780b1f850"
         }
       ],
@@ -3530,6 +3812,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-whm.audit.json",
+          "sha256": "8e0ffe02ea60b502bde8a6714ec318bcbd9d1358905a00cede511706d57bb0d3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.audit.json",
           "sha256": "8e0ffe02ea60b502bde8a6714ec318bcbd9d1358905a00cede511706d57bb0d3"
         }
       ],
@@ -3540,6 +3828,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-whm.model-read.json",
+          "sha256": "fd6a7b958a68faf259113f0115e2a7da284ed81936df89e9e63e351a9b2b2ca8",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-read.json",
           "sha256": "fd6a7b958a68faf259113f0115e2a7da284ed81936df89e9e63e351a9b2b2ca8"
         }
       ],
@@ -3550,6 +3844,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic-whm.model-render.json",
+          "sha256": "a433d038afb2c5c614e8ecf865b73fe9ec90a08f26b262183f2f64b13df0e294",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic-whm.model-render.json",
           "sha256": "a433d038afb2c5c614e8ecf865b73fe9ec90a08f26b262183f2f64b13df0e294"
         }
       ],
@@ -3560,6 +3860,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic.audit.json",
+          "sha256": "e8dbdbc113156a4269cef3f408eff1ebad723cd530054a29448af845dc55ab3a",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.audit.json",
           "sha256": "e8dbdbc113156a4269cef3f408eff1ebad723cd530054a29448af845dc55ab3a"
         }
       ],
@@ -3570,6 +3876,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic.archive-extract.json",
+          "sha256": "a22e53e8fa26f32b6ac8f70943c55112e0c24fd7125643799895655f2532c6ba",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-extract.json",
           "sha256": "a22e53e8fa26f32b6ac8f70943c55112e0c24fd7125643799895655f2532c6ba"
         }
       ],
@@ -3580,6 +3892,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/relic.archive-inspect.json",
+          "sha256": "a673b7279900c2f35453b9e33cf37f046298429f0c25f0737b6ac04964701e05",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/relic.archive-inspect.json",
           "sha256": "a673b7279900c2f35453b9e33cf37f046298429f0c25f0737b6ac04964701e05"
         }
       ],
@@ -3590,6 +3908,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rgt.audit.json",
+          "sha256": "d327b1ac1506f784dccb72a334578065fdc7daa39c3082cd5d6da6595c9be4c9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.audit.json",
           "sha256": "d327b1ac1506f784dccb72a334578065fdc7daa39c3082cd5d6da6595c9be4c9"
         }
       ],
@@ -3600,6 +3924,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rgt.image-inspect.json",
+          "sha256": "27ec97aa5a407dcc9e6a3d27bc61df85388c199c2d5536dc1e015ae588e6ebd4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-inspect.json",
           "sha256": "27ec97aa5a407dcc9e6a3d27bc61df85388c199c2d5536dc1e015ae588e6ebd4"
         }
       ],
@@ -3610,6 +3940,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rgt.image-read.json",
+          "sha256": "93bb97a1ad2e142f9eefc2c7465db602b92695e7929a32c8ac688e27055c8597",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-read.json",
           "sha256": "93bb97a1ad2e142f9eefc2c7465db602b92695e7929a32c8ac688e27055c8597"
         }
       ],
@@ -3620,6 +3956,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rgt.image-write.json",
+          "sha256": "401280050e82348a2cac0ae36e3f7c27aab64d50c12281aa00ff251ccbabe53e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-write.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-write.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rgt.image-write.json",
           "sha256": "401280050e82348a2cac0ae36e3f7c27aab64d50c12281aa00ff251ccbabe53e"
         }
       ],
@@ -3630,6 +3972,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rrtex.audit.json",
+          "sha256": "b7960f94ef73bfa28305f3bcb4d6b186246c68d0e330619840ac5cdad862124b",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.audit.json",
           "sha256": "b7960f94ef73bfa28305f3bcb4d6b186246c68d0e330619840ac5cdad862124b"
         }
       ],
@@ -3640,6 +3988,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rrtex.image-inspect.json",
+          "sha256": "10b2c27c09683f895bdead2f3cac6a483627aea32757c76a8c165b6557acde15",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-inspect.json",
           "sha256": "10b2c27c09683f895bdead2f3cac6a483627aea32757c76a8c165b6557acde15"
         }
       ],
@@ -3650,6 +4004,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rrtex.image-read.json",
+          "sha256": "0b48470bd6a98e2b627bd663bc3c89c4ecd04c784a696bd30efd5390299f956e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rrtex.image-read.json",
           "sha256": "0b48470bd6a98e2b627bd663bc3c89c4ecd04c784a696bd30efd5390299f956e"
         }
       ],
@@ -3660,6 +4020,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rsh.audit.json",
+          "sha256": "0cceb50849c9351fde6c8092045e59a0e9989cee206c99df50e0d92d57e0b294",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.audit.json",
           "sha256": "0cceb50849c9351fde6c8092045e59a0e9989cee206c99df50e0d92d57e0b294"
         }
       ],
@@ -3670,6 +4036,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rsh.image-inspect.json",
+          "sha256": "0eda5ca5d4108b7105fbcb14f78d09590093b179037feee5a3756d78f681fff9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-inspect.json",
           "sha256": "0eda5ca5d4108b7105fbcb14f78d09590093b179037feee5a3756d78f681fff9"
         }
       ],
@@ -3680,6 +4052,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rsh.image-read.json",
+          "sha256": "83ef14a5fc55c065c9325c61ebeccbd4c1e4091b36931ed85552955854281e16",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-read.json",
           "sha256": "83ef14a5fc55c065c9325c61ebeccbd4c1e4091b36931ed85552955854281e16"
         }
       ],
@@ -3690,6 +4068,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rsh.image-write.json",
+          "sha256": "ab36dca451df77780b7f1836d73e11da53ea68fc7585bf867be199c20e17ac3e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-write.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-write.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rsh.image-write.json",
           "sha256": "ab36dca451df77780b7f1836d73e11da53ea68fc7585bf867be199c20e17ac3e"
         }
       ],
@@ -3725,6 +4109,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rtx.audit.json",
+          "sha256": "9251bb832458ddafb777975156130134d49c972695e7360cfbfc2041deb7efcc",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.audit.json",
           "sha256": "9251bb832458ddafb777975156130134d49c972695e7360cfbfc2041deb7efcc"
         }
       ],
@@ -3735,6 +4125,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rtx.image-inspect.json",
+          "sha256": "c074c82036bf6c36a08bf6c3138ae6922a1d21528409d1ec3110290f313a60c9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-inspect.json",
           "sha256": "c074c82036bf6c36a08bf6c3138ae6922a1d21528409d1ec3110290f313a60c9"
         }
       ],
@@ -3745,6 +4141,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rtx.image-read.json",
+          "sha256": "a1ee37de065fd09e8c99c89150813d535c2fb75650740dacd30c57ad1df493fe",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-read.json",
           "sha256": "a1ee37de065fd09e8c99c89150813d535c2fb75650740dacd30c57ad1df493fe"
         }
       ],
@@ -3755,6 +4157,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/rtx.image-write.json",
+          "sha256": "bb4243461e2b5329c8cc37fc7a796e28f2def6748f373f05edab596df5ddb9c9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-write.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-write.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/rtx.image-write.json",
           "sha256": "bb4243461e2b5329c8cc37fc7a796e28f2def6748f373f05edab596df5ddb9c9"
         }
       ],
@@ -7518,6 +7926,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/supcom-scm.audit.json",
+          "sha256": "c7da37e7e151fdaf5c66bd17877a072ede70b4e67c6076f162c7b82b73db54c3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.audit.json",
           "sha256": "c7da37e7e151fdaf5c66bd17877a072ede70b4e67c6076f162c7b82b73db54c3"
         }
       ],
@@ -7528,6 +7942,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/supcom-scm.model-read.json",
+          "sha256": "aca4108401bb5407326dbccceee810b63a3ae906248ceafaf2613d3b1e58c55b",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-read.json",
           "sha256": "aca4108401bb5407326dbccceee810b63a3ae906248ceafaf2613d3b1e58c55b"
         }
       ],
@@ -7538,6 +7958,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/supcom-scm.model-render.json",
+          "sha256": "5f62ce1b34a68d335f70e5b16a882217243630cd67a01582a352e011a182bac7",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/supcom-scm.model-render.json",
           "sha256": "5f62ce1b34a68d335f70e5b16a882217243630cd67a01582a352e011a182bac7"
         }
       ],
@@ -7756,6 +8182,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/uasset.audit.json",
+          "sha256": "41c12fd4da64e135575fad73ac1e71d6dbcf47da7b278986633613bd898c8236",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audit.json",
           "sha256": "41c12fd4da64e135575fad73ac1e71d6dbcf47da7b278986633613bd898c8236"
         }
       ],
@@ -7766,6 +8198,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-decode.json",
+          "sha256": "9c807e3d339e9ec5ca1e0e8396b5c08b2e84ec5b7e6ae7de1d6e21c0325a5960",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-decode.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-decode.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-decode.json",
           "sha256": "9c807e3d339e9ec5ca1e0e8396b5c08b2e84ec5b7e6ae7de1d6e21c0325a5960"
         }
       ],
@@ -7776,6 +8214,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-export.json",
+          "sha256": "adf387afcc571b9186c281dd764690e8a3a3f6c0f4076f86eead9dcea1d50b9d",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-export.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-export.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-export.json",
           "sha256": "adf387afcc571b9186c281dd764690e8a3a3f6c0f4076f86eead9dcea1d50b9d"
         }
       ],
@@ -7786,6 +8230,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/uasset.audio-inspect.json",
+          "sha256": "a37f76b7f10200387b47b0ae21fd0c8d951ed4863a36ceae74c0ff09e78bb2d1",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/uasset.audio-inspect.json",
           "sha256": "a37f76b7f10200387b47b0ae21fd0c8d951ed4863a36ceae74c0ff09e78bb2d1"
         }
       ],
@@ -7796,6 +8246,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-assets.audit.json",
+          "sha256": "b18e751db8f73d9c943f5f8a5a89a4a0d62c399b4e34388b7eaa32a153a17c33",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets.audit.json",
           "sha256": "b18e751db8f73d9c943f5f8a5a89a4a0d62c399b4e34388b7eaa32a153a17c33"
         }
       ],
@@ -7806,10 +8262,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-assets-archive.extract.json",
-          "sha256": "25354599a9e397a679104743c09c176e685ae64848d60202154d7f1d893833d5"
+          "sha256": "25354599a9e397a679104743c09c176e685ae64848d60202154d7f1d893833d5",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-assets-archive.extract.r2.json",
+          "sha256": "cb8ceb39a01aefa946dd585f1c14baa2ece91cd04c4aa02856872f80a2e6c8c1",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.json",
+          "sha256": "25354599a9e397a679104743c09c176e685ae64848d60202154d7f1d893833d5"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.extract.r2.json",
           "sha256": "cb8ceb39a01aefa946dd585f1c14baa2ece91cd04c4aa02856872f80a2e6c8c1"
         }
       ],
@@ -7820,6 +8288,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-assets-archive.inspect.json",
+          "sha256": "5ea911455881af383bd083b0a9ee18e651dbd8a48bd3a35128e8e40361924377",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-assets-archive.inspect.json",
           "sha256": "5ea911455881af383bd083b0a9ee18e651dbd8a48bd3a35128e8e40361924377"
         }
       ],
@@ -7830,10 +8304,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.audit.json",
-          "sha256": "663e530852443296b2616abea91015d4f2e04a0338e5c0b6003d90d7cd8d1efe"
+          "sha256": "663e530852443296b2616abea91015d4f2e04a0338e5c0b6003d90d7cd8d1efe",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.audit.r2.json",
+          "sha256": "e04a694b782ff49f60042252fd3807087f0813d7b70fc3fd294010ec0fee62b8",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.json",
+          "sha256": "663e530852443296b2616abea91015d4f2e04a0338e5c0b6003d90d7cd8d1efe"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.audit.r2.json",
           "sha256": "e04a694b782ff49f60042252fd3807087f0813d7b70fc3fd294010ec0fee62b8"
         }
       ],
@@ -7844,6 +8330,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.model-read.json",
+          "sha256": "b931263ac4ddd49716b8789b67217f2f4e68550ece7ee032cc0f8d013da25105",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-read.json",
           "sha256": "b931263ac4ddd49716b8789b67217f2f4e68550ece7ee032cc0f8d013da25105"
         }
       ],
@@ -7854,6 +8346,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-mesh.model-render.json",
+          "sha256": "d7d47ef2bf63ea0e88ad5e24846147cb3ac809e53405b66ea8fbb2c383a2032e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-mesh.model-render.json",
           "sha256": "d7d47ef2bf63ea0e88ad5e24846147cb3ac809e53405b66ea8fbb2c383a2032e"
         }
       ],
@@ -7864,6 +8362,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-ress.audit.json",
+          "sha256": "1afd3bb514cbeecbd11471b7d38988eb2329ec6ba045f274a978c4afcf55f68e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress.audit.json",
           "sha256": "1afd3bb514cbeecbd11471b7d38988eb2329ec6ba045f274a978c4afcf55f68e"
         }
       ],
@@ -7874,6 +8378,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-ress-archive.extract.json",
+          "sha256": "85646253d177268eb40f15f0a61ed3e1339fffa06b2ad8ed4f4da3177dc1b4c9",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.extract.json",
           "sha256": "85646253d177268eb40f15f0a61ed3e1339fffa06b2ad8ed4f4da3177dc1b4c9"
         }
       ],
@@ -7884,6 +8394,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity-ress-archive.inspect.json",
+          "sha256": "faeaa48cf0f880baf68f2b412247a94c71a14ae3ef95f0fb5cebbd4512ffb33c",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity-ress-archive.inspect.json",
           "sha256": "faeaa48cf0f880baf68f2b412247a94c71a14ae3ef95f0fb5cebbd4512ffb33c"
         }
       ],
@@ -7894,6 +8410,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity.audit.json",
+          "sha256": "bc85292debb41430bad7fbd6947885b07a1cbb12df55960353d1b7778ed3b508",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.audit.json",
           "sha256": "bc85292debb41430bad7fbd6947885b07a1cbb12df55960353d1b7778ed3b508"
         }
       ],
@@ -7904,6 +8426,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity.image-inspect.json",
+          "sha256": "d707e87138b8ecef14e788f21504a720aff2e9c0bd596c4014fa0570c95e42b4",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-inspect.json",
           "sha256": "d707e87138b8ecef14e788f21504a720aff2e9c0bd596c4014fa0570c95e42b4"
         }
       ],
@@ -7914,10 +8442,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity.image-read.json",
-          "sha256": "e8028e50aef0cc6a8f9a4c62adfa4f26b90bb2fc3c100af154a8b9bd8261f4a3"
+          "sha256": "e8028e50aef0cc6a8f9a4c62adfa4f26b90bb2fc3c100af154a8b9bd8261f4a3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unity.image-read.r2.json",
+          "sha256": "ffd502f1947cf4cf7caea650a0dc4fddc003fe564b9d801cc80b7ff00ad6cfcb",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.json",
+          "sha256": "e8028e50aef0cc6a8f9a4c62adfa4f26b90bb2fc3c100af154a8b9bd8261f4a3"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unity.image-read.r2.json",
           "sha256": "ffd502f1947cf4cf7caea650a0dc4fddc003fe564b9d801cc80b7ff00ad6cfcb"
         }
       ],
@@ -7928,6 +8468,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unityfs.audit.json",
+          "sha256": "bc9baf3a5159171eb73623d28d7e54895dd47bef7ef1547eb5f47c55dfc0bf31",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs.audit.json",
           "sha256": "bc9baf3a5159171eb73623d28d7e54895dd47bef7ef1547eb5f47c55dfc0bf31"
         }
       ],
@@ -7938,6 +8484,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unityfs-archive.extract.json",
+          "sha256": "a2631de513bd879796547162583e4c1b44c53dac0c85fce6a7292f6372a0050e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.extract.json",
           "sha256": "a2631de513bd879796547162583e4c1b44c53dac0c85fce6a7292f6372a0050e"
         }
       ],
@@ -7948,6 +8500,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unityfs-archive.inspect.json",
+          "sha256": "59236326c6d0189d2513df0f0923ff0d591741f065b10f7260e93a1a728d1587",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unityfs-archive.inspect.json",
           "sha256": "59236326c6d0189d2513df0f0923ff0d591741f065b10f7260e93a1a728d1587"
         }
       ],
@@ -7958,6 +8516,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.audit.json",
+          "sha256": "23ef7249b1bc1b87d6bedd00f22e95c61dbf50da521ddc72eefde7a2cd496149",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.audit.json",
           "sha256": "23ef7249b1bc1b87d6bedd00f22e95c61dbf50da521ddc72eefde7a2cd496149"
         }
       ],
@@ -7968,10 +8532,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-read.json",
-          "sha256": "e16ddfa374b46cef6041a28e644004321a20faae758c6183f9ee70bce7384d95"
+          "sha256": "e16ddfa374b46cef6041a28e644004321a20faae758c6183f9ee70bce7384d95",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-read.r2.json",
+          "sha256": "4b71f54b497be4d8a6271be854adced2e8d3cda882794b383287301f0b83afd7",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.json",
+          "sha256": "e16ddfa374b46cef6041a28e644004321a20faae758c6183f9ee70bce7384d95"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-read.r2.json",
           "sha256": "4b71f54b497be4d8a6271be854adced2e8d3cda882794b383287301f0b83afd7"
         }
       ],
@@ -7982,6 +8558,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-actorx.model-render.json",
+          "sha256": "25768622f65fbe31c197f6fdf8772ca2c26820073401368e6bdbf7bb718cb7ca",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-actorx.model-render.json",
           "sha256": "25768622f65fbe31c197f6fdf8772ca2c26820073401368e6bdbf7bb718cb7ca"
         }
       ],
@@ -7992,10 +8574,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.audit.json",
-          "sha256": "10df177ea64b618071769aac8ddb6bac9c41d2b7612df0514219fe1a9622e43a"
+          "sha256": "10df177ea64b618071769aac8ddb6bac9c41d2b7612df0514219fe1a9622e43a",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.audit.r2.json",
+          "sha256": "6d548a01701422b4ca8823fe2ec899d73e38f2ef44bf95f6b2292812fd814cd0",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.json",
+          "sha256": "10df177ea64b618071769aac8ddb6bac9c41d2b7612df0514219fe1a9622e43a"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.audit.r2.json",
           "sha256": "6d548a01701422b4ca8823fe2ec899d73e38f2ef44bf95f6b2292812fd814cd0"
         }
       ],
@@ -8006,6 +8600,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.archive-extract.json",
+          "sha256": "0b979b42bb02a06126573f7461acef1a96f6ed288eee253f4cf2fcc45530e330",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-extract.json",
           "sha256": "0b979b42bb02a06126573f7461acef1a96f6ed288eee253f4cf2fcc45530e330"
         }
       ],
@@ -8016,6 +8616,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-iostore.archive-inspect.json",
+          "sha256": "944195e47ec055b1aa34c2d25b679b1b1f28877fde208f50dc26d026ad57875b",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-iostore.archive-inspect.json",
           "sha256": "944195e47ec055b1aa34c2d25b679b1b1f28877fde208f50dc26d026ad57875b"
         }
       ],
@@ -8026,10 +8632,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.audit.json",
-          "sha256": "7bed2ce6d2527fdc8a3e35f01680b4c726a914b443eb65975f0404429bfbcab5"
+          "sha256": "7bed2ce6d2527fdc8a3e35f01680b4c726a914b443eb65975f0404429bfbcab5",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.audit.r2.json",
+          "sha256": "f855ee43a38029583741d8edd4d8b2c3cf07a5ca846b56a4c29b1dcafaea325a",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.json",
+          "sha256": "7bed2ce6d2527fdc8a3e35f01680b4c726a914b443eb65975f0404429bfbcab5"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.audit.r2.json",
           "sha256": "f855ee43a38029583741d8edd4d8b2c3cf07a5ca846b56a4c29b1dcafaea325a"
         }
       ],
@@ -8040,6 +8658,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.archive-extract.json",
+          "sha256": "f525433f2f4c663474b6091ed63b87628c1e6e87616bebfc03cdf7b524ec4d43",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-extract.json",
           "sha256": "f525433f2f4c663474b6091ed63b87628c1e6e87616bebfc03cdf7b524ec4d43"
         }
       ],
@@ -8050,6 +8674,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-pak.archive-inspect.json",
+          "sha256": "27482bf84a4e7f12d8c331bf13d595b1d2ce2595f3a18c038a8c7fc4a15776bf",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-pak.archive-inspect.json",
           "sha256": "27482bf84a4e7f12d8c331bf13d595b1d2ce2595f3a18c038a8c7fc4a15776bf"
         }
       ],
@@ -8060,6 +8690,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-texture.audit.json",
+          "sha256": "5f3e18308ff90227acb76c90ffe3a50e66125418f8b3f99125a46ae0bd3300ae",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.audit.json",
           "sha256": "5f3e18308ff90227acb76c90ffe3a50e66125418f8b3f99125a46ae0bd3300ae"
         }
       ],
@@ -8070,6 +8706,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-texture.image-inspect.json",
+          "sha256": "c0aa7498821c2e9d0651ae4a01579f891e0a390eb6052ef51492c6ab166c2f09",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-inspect.json",
           "sha256": "c0aa7498821c2e9d0651ae4a01579f891e0a390eb6052ef51492c6ab166c2f09"
         }
       ],
@@ -8080,6 +8722,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-texture.image-read.json",
+          "sha256": "1cd8328ee869c3bdb8339ed9743c1b0a42ee958dce6f4b8330663d43552a194a",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-texture.image-read.json",
           "sha256": "1cd8328ee869c3bdb8339ed9743c1b0a42ee958dce6f4b8330663d43552a194a"
         }
       ],
@@ -8090,10 +8738,22 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.audit.json",
-          "sha256": "e47dd2c10221ebeaeccf0d84223dbefd4c09eb9a89b6ca8f85982115e75764e0"
+          "sha256": "e47dd2c10221ebeaeccf0d84223dbefd4c09eb9a89b6ca8f85982115e75764e0",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.audit.r2.json",
+          "sha256": "fa2f944f900a779eb5acf7e8211039a1b634f6cd10248f2e038a1a3810acdff2",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.r2.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.json",
+          "sha256": "e47dd2c10221ebeaeccf0d84223dbefd4c09eb9a89b6ca8f85982115e75764e0"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.audit.r2.json",
           "sha256": "fa2f944f900a779eb5acf7e8211039a1b634f6cd10248f2e038a1a3810acdff2"
         }
       ],
@@ -8104,6 +8764,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-export.json",
+          "sha256": "c949547d02306ab2c58100dcc7b17cadc10f7ab2a9d6401a07d8877a10110b66",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-export.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-export.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-export.json",
           "sha256": "c949547d02306ab2c58100dcc7b17cadc10f7ab2a9d6401a07d8877a10110b66"
         }
       ],
@@ -8114,6 +8780,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-extract.json",
+          "sha256": "7f03818a08d18857d6bbc6abd8a5d6a5d4dcda6ed621a2e559b3ab1700a8c8ea",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-extract.json",
           "sha256": "7f03818a08d18857d6bbc6abd8a5d6a5d4dcda6ed621a2e559b3ab1700a8c8ea"
         }
       ],
@@ -8124,6 +8796,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset-video.video-inspect.json",
+          "sha256": "4d197c1b7ddc8a5bed257f592a99e0436994f577b01f7118a6f71158ee0533d8",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset-video.video-inspect.json",
           "sha256": "4d197c1b7ddc8a5bed257f592a99e0436994f577b01f7118a6f71158ee0533d8"
         }
       ],
@@ -8134,14 +8812,32 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.json",
-          "sha256": "030516c0e32a18770d5068d44cb1df41109463cb099ca72917a3041b5c33d788"
+          "sha256": "030516c0e32a18770d5068d44cb1df41109463cb099ca72917a3041b5c33d788",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.r2.json",
-          "sha256": "34c86c2c45f1fd3faafa1bc2f5fa86735840bb18885ab77bbb1e7cc688720eb1"
+          "sha256": "34c86c2c45f1fd3faafa1bc2f5fa86735840bb18885ab77bbb1e7cc688720eb1",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r2.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r2.json"
         },
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.audit.r3.json",
+          "sha256": "e9e0591d82d7f235a43b4c73848b8f9a356e1e0882d3875ff7c63e67400e4a2b",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r3.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r3.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.json",
+          "sha256": "030516c0e32a18770d5068d44cb1df41109463cb099ca72917a3041b5c33d788"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r2.json",
+          "sha256": "34c86c2c45f1fd3faafa1bc2f5fa86735840bb18885ab77bbb1e7cc688720eb1"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.audit.r3.json",
           "sha256": "e9e0591d82d7f235a43b4c73848b8f9a356e1e0882d3875ff7c63e67400e4a2b"
         }
       ],
@@ -8152,6 +8848,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.model-read.json",
+          "sha256": "2a278a1370753e2416ebe86b2684d8c0ca7e0edb972f3d44d897e878e7a7422a",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-read.json",
           "sha256": "2a278a1370753e2416ebe86b2684d8c0ca7e0edb972f3d44d897e878e7a7422a"
         }
       ],
@@ -8162,6 +8864,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/unreal-uasset.model-render.json",
+          "sha256": "ccf1bc7d5b0e2ac83cb9456eeb2c6e8390cbd28881ca2ba137d891ac2f867c02",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-render.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-render.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/unreal-uasset.model-render.json",
           "sha256": "ccf1bc7d5b0e2ac83cb9456eeb2c6e8390cbd28881ca2ba137d891ac2f867c02"
         }
       ],
@@ -8498,6 +9206,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wd.audit.json",
+          "sha256": "f63a4e07a7825a2d0e421e4bac449c49f72c8a3842b9be93a12eceeaa926a85e",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd.audit.json",
           "sha256": "f63a4e07a7825a2d0e421e4bac449c49f72c8a3842b9be93a12eceeaa926a85e"
         }
       ],
@@ -8508,6 +9222,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wd-archive.extract.json",
+          "sha256": "43b007cb597962a34baa1291add04deb34a25f893187a04cae15445998341e48",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.extract.json",
           "sha256": "43b007cb597962a34baa1291add04deb34a25f893187a04cae15445998341e48"
         }
       ],
@@ -8518,6 +9238,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wd-archive.inspect.json",
+          "sha256": "03325af6296123574a8845bb8dd87e3f479818333a8665d513cb9821bf53aeb3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wd-archive.inspect.json",
           "sha256": "03325af6296123574a8845bb8dd87e3f479818333a8665d513cb9821bf53aeb3"
         }
       ],
@@ -8553,6 +9279,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wem.audit.json",
+          "sha256": "15daf7e23b22edb96cf53c789020104ddc7d47102e05086138d1a174ac23fa45",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audit.json",
           "sha256": "15daf7e23b22edb96cf53c789020104ddc7d47102e05086138d1a174ac23fa45"
         }
       ],
@@ -8563,6 +9295,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wem.audio-export.json",
+          "sha256": "4a08fac5a22eaa0c590926af39a00bbb2fef6195518a0f23b3e9c9f132c190f1",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-export.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-export.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-export.json",
           "sha256": "4a08fac5a22eaa0c590926af39a00bbb2fef6195518a0f23b3e9c9f132c190f1"
         }
       ],
@@ -8573,6 +9311,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wem.audio-inspect.json",
+          "sha256": "6a14ce2b64a3bd7b12f904d2eb38eb59b9d4e6ea182f92dfc5c44de58d626ebd",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wem.audio-inspect.json",
           "sha256": "6a14ce2b64a3bd7b12f904d2eb38eb59b9d4e6ea182f92dfc5c44de58d626ebd"
         }
       ],
@@ -8648,6 +9392,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wtp.audit.json",
+          "sha256": "3b00e328ffdab324c624cd4283a093c5b24f6fa80a2efd486093f76c1c9c22f0",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.audit.json",
           "sha256": "3b00e328ffdab324c624cd4283a093c5b24f6fa80a2efd486093f76c1c9c22f0"
         }
       ],
@@ -8658,6 +9408,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wtp.image-inspect.json",
+          "sha256": "93060c81c2e7463155ceea59061726a339f5ba5dd01f88c809833f6bf8f10269",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-inspect.json",
           "sha256": "93060c81c2e7463155ceea59061726a339f5ba5dd01f88c809833f6bf8f10269"
         }
       ],
@@ -8668,6 +9424,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wtp.image-read.json",
+          "sha256": "d6a7315222e4edc488b772f47dbca453328acf3ac2e109cdc718e81c299b6736",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-read.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-read.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-read.json",
           "sha256": "d6a7315222e4edc488b772f47dbca453328acf3ac2e109cdc718e81c299b6736"
         }
       ],
@@ -8678,6 +9440,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wtp.image-write.json",
+          "sha256": "ec0a149396f9d188c9d7317f3c990563ea3ee936d1d9080e780f174c09e849be",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-write.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-write.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wtp.image-write.json",
           "sha256": "ec0a149396f9d188c9d7317f3c990563ea3ee936d1d9080e780f174c09e849be"
         }
       ],
@@ -8688,6 +9456,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wwise-pck.audit.json",
+          "sha256": "192cb9c54a4064cc420424f6ca03e91b5e2adc9ef673a869252fb208703fbcbe",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck.audit.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck.audit.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck.audit.json",
           "sha256": "192cb9c54a4064cc420424f6ca03e91b5e2adc9ef673a869252fb208703fbcbe"
         }
       ],
@@ -8698,6 +9472,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wwise-pck-archive.extract.json",
+          "sha256": "b4f268bf3a294b1a66560dc6616052ff857fb61ee2386cdf87b5c902ad4507d3",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.extract.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.extract.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.extract.json",
           "sha256": "b4f268bf3a294b1a66560dc6616052ff857fb61ee2386cdf87b5c902ad4507d3"
         }
       ],
@@ -8708,6 +9488,12 @@
       "evidence": [
         {
           "path": "modkit-extensions-other/test/receipts/k1/wwise-pck-archive.inspect.json",
+          "sha256": "b9f74616a6446d3f4860c8bda57d168a67c94138f252778077f45b80e48c6c9c",
+          "snapshotPath": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.inspect.json",
+          "movedTo": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.inspect.json"
+        },
+        {
+          "path": "modkit-core/reports/parity/evidence/other-retired-2026-10-21/receipts/k1/wwise-pck-archive.inspect.json",
           "sha256": "b9f74616a6446d3f4860c8bda57d168a67c94138f252778077f45b80e48c6c9c"
         }
       ],

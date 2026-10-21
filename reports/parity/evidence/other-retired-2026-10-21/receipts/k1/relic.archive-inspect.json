@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the chunk tree written into the synthetic Relic Chunky file",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:model.whm:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "26edee881d8747657777d09cd193b44a58d79881a3cb7409d0a2c18feb77ea9a",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:model.whm:view.inspect"
+      ]
+    }
+  ]
+}

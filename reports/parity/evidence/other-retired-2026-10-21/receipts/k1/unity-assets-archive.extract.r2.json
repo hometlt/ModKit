@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-assets",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-cafe",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unitySerialized(UNITY_SAMPLE)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:CAB-cafe:Dependencies/unity-externals.json:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9196b9ee920c5da9088c58af13031be7ef4ee290a37fbf60f64ad469a0bfaa8f",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:GameObject/Hero#1.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "c9caed58f56a4e9a72ca5e0903ae76412439ad3e983b0353d3d0383701df47ec",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Objects/GameObject/Hero#1.bin:container.extract",
+      "verdict": "identical",
+      "resultDigest": "90071e8584e50a6697dc22311cde0e774fc0b16a95067aa50763445da7d44d30",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Transform/Transform-2#2.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "20c55fd48fa998467ba8d4c83d6a2528c6b41807f0c9a72995a29a06069f1e4b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Objects/Transform/Transform-2#2.bin:container.extract",
+      "verdict": "identical",
+      "resultDigest": "15ec7bf0b50732b49f8228e07d24365338f9e3ab994b00af08e5a3bffe55fd8b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Albedo#3.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "acda3c8d76a942f7c75b7035f1696c3437a7906b7fee58dd12f7faa81244a49a",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Albedo#3_2x2_rgba32.dds:container.extract",
+      "verdict": "identical",
+      "resultDigest": "bd8a1625c7cf03fe471ef0eeea93d0535756304ff26b58185d3736f64dd7aa2a",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Normal#4.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "508f61a3dfe2dea572feb3b3a994e38deba9029799a972c5805c9521e5f264ac",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Normal#4_4x4_dxt1.dds:container.extract",
+      "verdict": "identical",
+      "resultDigest": "a78153c759e3d690d7292250844c38f89812de80127be42f7ddc05d064f76bdf",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Mask#5.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "f5e9da012c5642422e489f3d7ce98b5949e96d768cd5b9d4d05568d2cbb3a4ee",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Mask#5_2x1_rgb24.dds:container.extract",
+      "verdict": "identical",
+      "resultDigest": "fbcd4231d073785c39860931a734776eed8bdf4fc763f72ca265b9700c0b0c88",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Etc#6.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "a9ece2b959fc83efa5fc9563fd5d008fa34b1ee5dbd3cc4a138f4e551fa352f6",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Etc#6_4x4_etc2-rgb.ktx:container.extract",
+      "verdict": "identical",
+      "resultDigest": "454da23d41f04b43cac3248ef7e48bd39dcfd5819dcf08e3ee5437f25f4fa63b",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Crunch#7.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "6897f5259fc623ffdb4136f7d1646b89c1488103e1ffc121fc5ce57ef2632fd1",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Texture2D/Crunch#7_4x4_dxt1-crunched.unitytex:container.extract",
+      "verdict": "identical",
+      "resultDigest": "5c7a4109bbfba9a19497160600688eb277dd3c4fcd194399691e2da89ac753cd",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:TextAsset/Readme#8.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "3843acf644a5d4baa12340154cc7ad0db572505fbc99137f028b38f495d8dc5d",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:TextAsset/Readme#8.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "3df07caad4d6f2c258d480a63cf3646be14ef693a568bee8c2a50482d4bcc5a0",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:TextAsset/Wide#9.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "0fe0d3b48a2363cae9a854974194cfa6de9edf370afb2f07a6eeeb4a9ce639f9",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:TextAsset/Wide#9.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "0abaa40b10436a8fbba40ad39a0ba58da06f7aa0fd12a488f1ee358ed04fb942",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Material/Mat#10.assetinfo.txt:container.extract",
+      "verdict": "identical",
+      "resultDigest": "cc7f5ec876ed166816aa4966369e623d77b0dd38142cf6704fe349d25d3146b8",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:CAB-cafe:Objects/Material/Mat#10.bin:container.extract",
+      "verdict": "identical",
+      "resultDigest": "94f90fa02fda837f47e99dffb0a29b28e117ab21d155c02ef9e96fe3697ff022",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-assets.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:CAB-cafe:Dependencies/unity-externals.json:container.extract",
+        "synthetic:CAB-cafe:GameObject/Hero#1.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Objects/GameObject/Hero#1.bin:container.extract",
+        "synthetic:CAB-cafe:Transform/Transform-2#2.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Objects/Transform/Transform-2#2.bin:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Albedo#3.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Albedo#3_2x2_rgba32.dds:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Normal#4.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Normal#4_4x4_dxt1.dds:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Mask#5.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Mask#5_2x1_rgb24.dds:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Etc#6.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Etc#6_4x4_etc2-rgb.ktx:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Crunch#7.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Texture2D/Crunch#7_4x4_dxt1-crunched.unitytex:container.extract",
+        "synthetic:CAB-cafe:TextAsset/Readme#8.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:TextAsset/Readme#8.txt:container.extract",
+        "synthetic:CAB-cafe:TextAsset/Wide#9.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:TextAsset/Wide#9.txt:container.extract",
+        "synthetic:CAB-cafe:Material/Mat#10.assetinfo.txt:container.extract",
+        "synthetic:CAB-cafe:Objects/Material/Mat#10.bin:container.extract"
+      ]
+    }
+  ]
+}

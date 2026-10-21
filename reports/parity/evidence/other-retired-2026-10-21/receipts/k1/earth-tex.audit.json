@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-tex",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-audits.test.ts",
+    "samples": [
+      {
+        "name": "png.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(TEX_PNG, 32)",
+        "sha256": "47439a0a17e50204774a21f4267560efef2d2b45ab8f9893cb2de24607924a3a"
+      },
+      {
+        "name": "none.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#tex(new Uint8Array(64), 32)",
+        "sha256": "5859f9c24cb7608b026d4e92666c4f1dcee53d4de45e06dcd91cb9498831fea0"
+      },
+      {
+        "name": "diablo3.tex",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#DIABLO3_TEX",
+        "sha256": "7e7f12ed73ab6aeb57aa095de079c17ff5cf5b663989cc9e5a0e627a5fbbaef4"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex/codec.manifest.json",
+        "sha256LF": "c93d844638111f588274cdb962424bfc34dd3ad316644902f4e52e5d7f553fd6"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex/src/detect.ts",
+        "sha256LF": "caf3c5205f42d15b8e3de3dc39cf5e7ce10824284819ecb58ecc620db457ca47"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex/src/index.ts",
+        "sha256LF": "f4bd4bfb470f3c988715120933b3bd5758eeda63eacfc5dd5c6c5ce128e3fcdc"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "b37f57ccdf81ab241bbc5e603a3bfed7252df162b57b5790a9906d1ace109f74",
+      "mk3Operation": "probe (earth-tex manifest probe plan) + view.inspect"
+    },
+    {
+      "id": "mk2-source:earthTexCodec+default earthTexCodec",
+      "verdict": "identical",
+      "resultDigest": "cd4f2856536cae77223edf4dc4fa87f790d8811fde7179117a92a1d7a4509dc2",
+      "mk3Operation": "view.inspect metadata, container.extract, then codec-kit decodePngSamples"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "0739f4a6474d869c107e712b855768994f91d4905274f6f0c2a0a4f5283033ed",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "bb7ea5dbfaa590a33bddeef136fc953709553bc0f71d46c6259b33cc0bb83fef",
+      "mk3Operation": "view.inspect, container.extract"
+    },
+    {
+      "id": "mk3-manifest:container.extract",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "spec.operations"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-tex/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:earthTexCodec+default earthTexCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations",
+        "mk3-manifest:container.extract"
+      ]
+    }
+  ]
+}

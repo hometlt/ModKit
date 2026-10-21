@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "grey-goo-alo",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "model.render",
+    "oracle": "the synthetic model exported by the codec's own model.export-uvm and drawn by the core UVM codec's model.render, both as the host runs them",
+    "suite": "modkit-extensions-other/test/behavior/k1-petroglyph-receipts.test.ts",
+    "samples": [
+      {
+        "name": "unit.alo",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#greyGoo(ALO_MODEL)",
+        "sha256": "30b3d12ed722f24e49a7281ffa78417d914fd303e850ab02663b9a448760c4dd"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:unit.alo:model.export-uvm",
+      "verdict": "identical",
+      "resultDigest": "d472dc41f90272eda5850099a190f0c8f9aa6c1576539a0a697e0d0965e52a0f",
+      "mk3Operation": "model.export-uvm (handler model-export-uvm)"
+    },
+    {
+      "id": "synthetic:unit.alo:model.export-uvm:model.render",
+      "verdict": "identical",
+      "resultDigest": "61b9f037cd58db4d3a5b5f3f4d58736344142b6b961c68abfc3fa289375d4592",
+      "mk3Operation": "model.render (modkit/model-uvm render-uvm-scene)"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.render",
+      "kind": "operation",
+      "legacyOperation": "model.render",
+      "adapterOperation": "model.render",
+      "targetOperation": "model.render",
+      "handlerId": "render-uvm-scene",
+      "contribution": "modkit-core/extensions/models/contributions/codec-uvm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:unit.alo:model.export-uvm",
+        "synthetic:unit.alo:model.export-uvm:model.render"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-sga",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/relic-sga at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "attrib.v2.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(2, SGA_FILES)",
+        "sha256": "1aeb16e8cf425b9d6c4304921a1c8571a4b49bdda68d1095d796bc900a70a4bf"
+      },
+      {
+        "name": "scar.v7.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(7, SGA_V7_FILES)",
+        "sha256": "8921ce14a4428d5b29188056d6c9eee1e152f6e34bf49ffcb8c737232cb96607"
+      },
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/codec.manifest.json",
+        "sha256LF": "09b98aadc5716b86b25443716a869e46092868899ceb059598355e1b78af6dc9"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/src/index.ts",
+        "sha256LF": "07a3ba7887f1669bb0befd45e6c0ca79304140601d2021f83e586ebcc5c98b67"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isRelicSga",
+      "verdict": "identical",
+      "resultDigest": "b37f57ccdf81ab241bbc5e603a3bfed7252df162b57b5790a9906d1ace109f74",
+      "mk3Operation": "relic-sga/sga.ts isRelicSga"
+    },
+    {
+      "id": "mk2-source:inspectRelicSgaHeader",
+      "verdict": "identical",
+      "resultDigest": "f9212e4dde92f4edbd02f0bb18da46828e8dda59597c5eb2d3584f326d359fa3",
+      "mk3Operation": "relic-sga/sga.ts readSgaHeader"
+    },
+    {
+      "id": "mk2-source:parseRelicSgaArchive+RelicSgaEntry+RelicSgaArchive",
+      "verdict": "identical",
+      "resultDigest": "d8867ac0c3a6a1e7b2b3da626e1002a103a9830cbb615345180bde57812ced1d",
+      "mk3Operation": "relic-sga/sga.ts readSgaIndex"
+    },
+    {
+      "id": "mk2-source:default relicSgaCodec",
+      "verdict": "identical",
+      "resultDigest": "eaa1a2f834131aa1f65f33b50b817815a280fdebd739e1cc67b99e6c52cf4966",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "a60ef1aa09bbe7910a18c053deefa46324730e31426619ff8ad5bfc6cc20ce95",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "5881c43f59c5a0191863ac18e485b0fdd5237dfb4584c8529e7361bf0db39d02",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-sga/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-sga.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isRelicSga",
+        "mk2-source:inspectRelicSgaHeader",
+        "mk2-source:parseRelicSgaArchive+RelicSgaEntry+RelicSgaArchive",
+        "mk2-source:default relicSgaCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

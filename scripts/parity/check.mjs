@@ -27,7 +27,6 @@ import {
   currentContributionId,
   currentRepositoryBindings,
   ownerOfLegacyExtension,
-  repositoryRoots,
   resolveLegacyExtension,
 } from './repositories.mjs'
 import { buildOwnerParityReceipt } from './receipt.mjs'
@@ -439,11 +438,7 @@ async function locateSample(sample, temporaryRoot) {
       publishedPath: sample.relativePath ?? publishedSuffix(path),
     }
   }
-  let path = resolve(repoRoot, sample.path)
-  if (!(await exists(path)) && ownerOfLegacyExtension(sample.x3Extension) === 'other') {
-    const roots = repositoryRoots(repoRoot)
-    path = resolve(roots.other, 'test', 'fixtures', 'mk2-synthetic', sample.path.split('/').at(-1))
-  }
+  const path = resolve(repoRoot, sample.path)
   return (await exists(path))
     ? { state: 'ready', path, publishedPath: sample.path }
     : corpusFailure(`corpus sample is missing: ${sample.path}`)

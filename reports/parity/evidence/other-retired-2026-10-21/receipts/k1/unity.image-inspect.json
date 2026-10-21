@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the name, dimensions, format and image count written into each MKXUNITYTEX header",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-image-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unitytex",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unitytex",
+        "sha256": "179c50516a2158e07f77aefa244ebde803fbe6b6b9710ef390841551d464601b"
+      },
+      {
+        "name": "Sky.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(DXT1 cubemap of dxt1Solid faces)",
+        "sha256": "82189bbea8269c4fa802c00b16304a4afe96468c33148b418ab23289421fbc1f"
+      },
+      {
+        "name": "Layers.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(RGB24 2D array)",
+        "sha256": "b3e691e023c9d1fdb0b61d06f2142aaa273be5c05cae3af4692d89d16e85ed60"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unitytex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "fd7b814bf9dd61908e3fb243d5c4491fc1c79592ec70e35f3261d61c7ae3af4c",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "e33a6a20f3caa5659669b1783b339c2ba7b5cc8c07ce8ab90ba70b372da99e93",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "synthetic:Layers.unitytex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "7729621a1d2ffda319b18a3815c19271ec758d5b2c983f6d7a449afccc56c1e7",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unitytex:view.inspect",
+        "synthetic:Sky.unitytex:view.inspect",
+        "synthetic:Layers.unitytex:view.inspect"
+      ]
+    }
+  ]
+}

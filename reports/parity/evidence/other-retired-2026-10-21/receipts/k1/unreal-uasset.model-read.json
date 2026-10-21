@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the StaticMesh export of the sample: its LOD positions and 16-bit indices, mirrored to right-handed with the winding reversed",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-model-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.staticmesh.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.staticmesh.uasset",
+        "sha256": "6723839f8ce16424dc1e4ecc242da062bc179127cc22fb7ee24136d39697b08c"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.staticmesh.uasset:info",
+      "verdict": "identical",
+      "resultDigest": "745e482740eab0bb67428447b36316edc8c2e0ee2c225c1d97d4c67fb8f9d075",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.staticmesh.uasset:nodes",
+      "verdict": "identical",
+      "resultDigest": "8666113289593144eb1cd6ee1a8c92a1cf0cb44bf803ca49156504cf34dcdd62",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:minimal.staticmesh.uasset:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "5a29fc71282e083e105ff021073897bea245cdf9cdff2d3dc3df674c80df632d",
+      "mk3Operation": "common.view/model-scene-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.staticmesh.uasset:info",
+        "synthetic:minimal.staticmesh.uasset:nodes",
+        "synthetic:minimal.staticmesh.uasset:primitive-0"
+      ]
+    }
+  ]
+}

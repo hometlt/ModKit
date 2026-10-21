@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "codec": "halo-era",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "every-method.era",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#era"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:every-method.era:art/units/marine.ugx:container.extract",
+      "verdict": "identical",
+      "resultDigest": "913d9461727780e5f38975dabb4e458212c21e52c09df7383bdce908633102d0",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-method.era:data/objects.xml:container.extract",
+      "verdict": "identical",
+      "resultDigest": "cb7d6fdd72a0a2f2fa69a87adb67af7f6d261158e8d34e4227fa9ae8e3d52c86",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-method.era:data/sounds.xml:container.extract",
+      "verdict": "identical",
+      "resultDigest": "b712764898c99cb1e5970668a0681ea0fecc432b146406df6f1b915d0511b2fd",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-method.era:DATA/2-Objects.xml:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4d96890e88a4f30c1e5811f706f539bd2dfed0b14fc6933f3eeedcef61b2ca11",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:every-method.era:art/units/marine.ugx:container.extract",
+        "synthetic:every-method.era:data/objects.xml:container.extract",
+        "synthetic:every-method.era:data/sounds.xml:container.extract",
+        "synthetic:every-method.era:DATA/2-Objects.xml:container.extract"
+      ]
+    }
+  ]
+}

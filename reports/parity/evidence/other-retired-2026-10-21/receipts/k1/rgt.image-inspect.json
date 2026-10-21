@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "rgt",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the size, image count and encoding written into the synthetic texture",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "red.rgt",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rgtSample",
+        "sha256": "e831eb4862081934199898384bc0410845677dbd46d55e14f87ced45af15b4d8"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:red.rgt:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "63c6211cd02d4d5871d58f59750ec04a7dd6acf02ae3c580617e7607584f66a1",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rgt.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:red.rgt:view.inspect"
+      ]
+    }
+  ]
+}

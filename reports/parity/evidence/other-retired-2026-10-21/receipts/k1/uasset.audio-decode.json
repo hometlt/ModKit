@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "codec": "uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.audio-media-source",
+    "oracle": "MK2's decode of the RIFF/WAVE embedded in the sample: the data chunk's 8-bit PCM as (u8 - 128) / 128, here decoded by the core WAV codec the host routes the package's audio/wav entry to",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.soundwave.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.soundwave.uasset",
+        "sha256": "a0ae6817bebfbeae4a9ccc1be7d28805be785fc1c5b6ecc6d408de60b2330323"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.soundwave.uasset:route",
+      "verdict": "identical",
+      "resultDigest": "5d8793087f7997fd38adca516676271c133f2e723895d498cc4c3d5912f8cf98",
+      "mk3Operation": "openSubject → openNestedSubject"
+    },
+    {
+      "id": "synthetic:minimal.soundwave.uasset:pcm",
+      "verdict": "identical",
+      "resultDigest": "b5c48e8c4b13c83a924b717061fb1849b3e24c38e64630343a3c96fd2061fa33",
+      "mk3Operation": "common.view/audio-media-source readPcm"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
+      "kind": "operation",
+      "legacyOperation": "audio.decode",
+      "adapterOperation": "view.audio-media-source",
+      "targetDataSource": {
+        "contract": "common.view/audio-media-source",
+        "major": 1
+      },
+      "contribution": "modkit-core/extensions/audio/contributions/codec-wav.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.soundwave.uasset:route",
+        "synthetic:minimal.soundwave.uasset:pcm"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "codec": "wd",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-receipts.test.ts",
+    "samples": [
+      {
+        "name": "every-record.wd",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#wd"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:every-record.wd:Parameters/Earth2160.par:container.extract",
+      "verdict": "identical",
+      "resultDigest": "3900199ab81c8da60020c23b8d5ae43f0be637242dac93565b07eea8aac40a8e",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-record.wd:Meshes/unit.msh:container.extract",
+      "verdict": "identical",
+      "resultDigest": "d66d7646d55c41cdb8bc762860146a8ccadb17dd222c0e09a2908c8b00b472b9",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-record.wd:Textures/unit.tex:container.extract",
+      "verdict": "identical",
+      "resultDigest": "367fd68d0f14cc85bf587aee965f41298f58cd860dbb0ea733b7a953d453ec94",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-record.wd:Sounds/click.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "baf0d0d843bab77e4126543a73e9ed80e6165e6cd7ac0986c7e2f8089a23c852",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:every-record.wd:MESHES/2-UNIT.msh:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4d96890e88a4f30c1e5811f706f539bd2dfed0b14fc6933f3eeedcef61b2ca11",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-wd.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:every-record.wd:Parameters/Earth2160.par:container.extract",
+        "synthetic:every-record.wd:Meshes/unit.msh:container.extract",
+        "synthetic:every-record.wd:Textures/unit.tex:container.extract",
+        "synthetic:every-record.wd:Sounds/click.wav:container.extract",
+        "synthetic:every-record.wd:MESHES/2-UNIT.msh:container.extract"
+      ]
+    }
+  ]
+}

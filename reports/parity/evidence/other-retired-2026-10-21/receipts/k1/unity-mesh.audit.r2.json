@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity-mesh",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 11,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/unity/engine/codecs/unity-mesh at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-audit-receipts.test.ts",
+    "samples": [
+      {
+        "name": "CAB-hero",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityCharacter().file",
+        "sha256": "29386fba5fa1c029b5f48b8ed8cc7ee3ecf9e35f16f8dff20f0d49a475c713db"
+      },
+      {
+        "name": "CAB-hero.resS",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#unityCharacter().ress",
+        "sha256": "3f778f8ddd6b808b6709db2e1e68eaffb3b33a62f23b6830634885e9867a17a9"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/codec.manifest.json",
+        "sha256LF": "46fb614cfa49a7df9f9fe1602b0d76bfa4471ce09b5c368a73c9dbad5f4c4e24"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/src/index.ts",
+        "sha256LF": "2ae57d20af69a0e50e39e2f7d4a8a79d8cc97ae009234e348dac45fbc956c3db"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:isUnityMeshPayload",
+      "verdict": "identical",
+      "resultDigest": "547ee2503741a868b7cfd3439fd5359858299be856a1475d06db916d64b63d2d",
+      "mk3Operation": "shared/mesh-payload.ts isUnityMeshPayload (the unity-mesh detect)"
+    },
+    {
+      "id": "mk2-source:encodeUnityMeshPayload+UnityMeshPayloadInput+UnityMeshPayloadSubMesh+UnityMeshPayloadMaterial+UnityMeshPayloadMorphTarget",
+      "verdict": "identical",
+      "resultDigest": "f5d28f68d680f6788ecfbaac09d6c7f9c09e465d0c2c89ab738de9c45b959fd3",
+      "mk3Operation": "shared/mesh-payload.ts encodeUnityMeshPayload (the writer of modkit/unity-assets)"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (geometry and skin)",
+      "verdict": "identical",
+      "resultDigest": "695ae1371ca0ff4a42588763ad795d58f742bf87d282af1881afe3e581cb3686",
+      "mk3Operation": "common.view/model-scene-source primitives (Z-up, as MK2 drew them)"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (skeleton)",
+      "verdict": "identical",
+      "resultDigest": "c106747c345befddde51c90009d0ed4c16ce38d0b3bc7d74cde489be16412eef",
+      "mk3Operation": "common.view/model-skeleton-source bindings on the scene bone nodes (a root parent is null)"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (materials)",
+      "verdict": "identical",
+      "resultDigest": "2cf66eb6db7872f39355b42e078c6b61b1fe30c06f2d5c0b3c5f3ccc59b68ee9",
+      "mk3Operation": "common.view/model-material-source"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (animations)",
+      "verdict": "identical",
+      "resultDigest": "bebd1609db638e6888fac2c30c6e3a3a4de411e034ea088eb60c9587ffb05212",
+      "mk3Operation": "common.view/model-animation-source bone channels (Z-up, seconds)"
+    },
+    {
+      "id": "mk2-source:unityMeshModelCodec#listTextureRequests",
+      "verdict": "identical",
+      "resultDigest": "9a615ac914b04f3df2b3b93cb95f172047b0d8d116c38b2182158231a825137e",
+      "mk3Operation": "common.view/model-resource-refs-source (reference-only texture paths)"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (blend shapes and their weights)",
+      "verdict": "identical",
+      "resultDigest": "83a11b7be13cebf3179e347c1b9eeeacaba6a2ad38700c351a449916b9f5fcff",
+      "mk3Operation": "common.view/model-scene-source primitive morphTargets (Z-up) and mesh morphWeights"
+    },
+    {
+      "id": "mk2-source:parseUnityMeshRenderModel (humanoid rig, animator controllers)",
+      "verdict": "identical",
+      "resultDigest": "bf93eda57e966ed1de31aeba9057edf3aa4d1f93df7b3ff2556f80f6ef6524e9",
+      "mk3Operation": "not carried to the model sources (planned: model facets for humanoid rigs and animator controllers); the MKXUNITYMESH payload keeps them"
+    },
+    {
+      "id": "mk2-manifest:match",
+      "verdict": "identical",
+      "resultDigest": "bc3a2a0d62d3fc4aada8bd30c948100d834a81f255b7672712efd707767a7589",
+      "mk3Operation": "spec.match.extensions and signatures"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "6cf4933dbfa3a4844248e64fe4026e27670b4fb9cfb4129e680dd41e054102d8",
+      "mk3Operation": "view.model-scene-source, model.export-uvm drawn by modkit/model-uvm render-uvm-scene"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity-mesh/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity-mesh.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:isUnityMeshPayload",
+        "mk2-source:encodeUnityMeshPayload+UnityMeshPayloadInput+UnityMeshPayloadSubMesh+UnityMeshPayloadMaterial+UnityMeshPayloadMorphTarget",
+        "mk2-source:parseUnityMeshRenderModel (geometry and skin)",
+        "mk2-source:parseUnityMeshRenderModel (skeleton)",
+        "mk2-source:parseUnityMeshRenderModel (materials)",
+        "mk2-source:parseUnityMeshRenderModel (animations)",
+        "mk2-source:unityMeshModelCodec#listTextureRequests",
+        "mk2-source:parseUnityMeshRenderModel (blend shapes and their weights)",
+        "mk2-source:parseUnityMeshRenderModel (humanoid rig, animator controllers)",
+        "mk2-manifest:match",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

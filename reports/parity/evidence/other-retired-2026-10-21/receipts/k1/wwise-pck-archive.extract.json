@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "codec": "wwise-pck",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "MK2's entry 5678.wem: 48 bytes at block 48, the sample's embedded minimal.wem (MK3 names language 0 sfx/)",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.wwise.pck",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.wwise.pck",
+        "sha256": "abc2debabd6122a1e71c3578b435c486567b1973c3561a401df629b5b1359d21"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.wwise.pck:sfx/5678.wem:container.extract",
+      "verdict": "identical",
+      "resultDigest": "14efdabe6d478705f4548747e110c230b1501fb8c30db5f2c1fd37b99a7e6323",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "executed": true,
+      "caseIds": ["synthetic:minimal.wwise.pck:sfx/5678.wem:container.extract"]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "codec": "wwise-pck",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-wwise-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.wwise.pck",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.wwise.pck",
+        "sha256": "abc2debabd6122a1e71c3578b435c486567b1973c3561a401df629b5b1359d21"
+      },
+      {
+        "name": "mk2 codecs/wwise-pck/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/codec.manifest.json",
+        "sha256LF": "25adf879c4eb2d3c5292ed7e4a18470e6c0abeba458e13bfce9f27d617611ae6"
+      },
+      {
+        "name": "mk2 codecs/wwise-pck/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/src/index.ts",
+        "sha256LF": "9fee48d46ac2e1adccc5731a8eed8f57acdbcf783ad324af0a09b93bbe4be59b"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#WwisePckEntry+WwisePckArchive+parseWwisePck",
+      "verdict": "identical",
+      "resultDigest": "8f9d10c976a196cf35a3b30c763b5bcbae8263a879749c474f3e53382b26b7c2",
+      "mk3Operation": "wwise-pck/akpk.ts readAkpk (language 0 is sfx/, as the package names it in Halo Wars; MK2 put it at the root)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#isWwisePck+wwisePckCodec.sniff",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "wwise-pck/akpk.ts readAkpk refuses a source without AKPK (detect: magic)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseWwisePck(chooseEndian+parseLanguages+parseTable+readU64Safe)",
+      "verdict": "identical",
+      "resultDigest": "fb2fce4c2e682c5cd455761edd6d65fca1ac79526379852268ac8487e4ce30fe",
+      "mk3Operation": "wwise-pck/akpk.ts readAkpk: big-endian, UTF-16 and UTF-8 names, 24-byte records (MK2 put externals at externals/<language>/, MK3 at <language>/externals/)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#wwisePckCodec.open+openSource+WwisePckSourceReader",
+      "verdict": "identical",
+      "resultDigest": "584fd5345b2e63c75a160b962089db7640a2b30e08368ab515f6e368caa71513",
+      "mk3Operation": "container.extract, by ranges (the host reads the entry; no byte cache)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#wwisePckCodec.describe+describeSource+describeWwisePck",
+      "verdict": "identical",
+      "resultDigest": "399194b7563487e8d303f5954ce404047123d78d275771be3d3ae30c55174734",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "2d028d58034c99f2f528a22c54eaf8ab415543583b08c27c0a99da9d69cfb2cb",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "35487127675987735b139e0799748342090f643ec0286dae72cae5cc6a741318",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/wwise-pck/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#WwisePckEntry+WwisePckArchive+parseWwisePck",
+        "mk2-source:src/index.ts#isWwisePck+wwisePckCodec.sniff",
+        "mk2-source:src/index.ts#parseWwisePck(chooseEndian+parseLanguages+parseTable+readU64Safe)",
+        "mk2-source:src/index.ts#wwisePckCodec.open+openSource+WwisePckSourceReader",
+        "mk2-source:src/index.ts#wwisePckCodec.describe+describeSource+describeWwisePck",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

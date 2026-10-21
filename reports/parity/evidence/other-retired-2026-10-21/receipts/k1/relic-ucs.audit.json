@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-ucs",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/relic-ucs at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "english.ucs",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#ucsFile(UCS_TEXT)",
+        "sha256": "211e91c25b2a3e4b930e88ea649f653ba8492df282d3851681ecff81cf53504d"
+      },
+      {
+        "name": "english-without-bom.ucs",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#ucsFile(UCS_TEXT, { bom: false })",
+        "sha256": "53f61e5f27fc912db571436e9057cd6b839597ead0ba0d97aa32dc060ea78d34"
+      },
+      {
+        "name": "space_marine.lua",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#UCS_ATTRIB_LUA",
+        "sha256": "bc08a89e1f681ebce3bf63004912d59fb02783f2a41e6652ec25544c3af53bf1"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/relic-ucs/codec.manifest.json",
+        "sha256LF": "9813e91857929250b34a749c3155a6dc3be8c5a03792dfa65781b1fd72b3e760"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-manifest:limitations#encoding-detection",
+      "verdict": "identical",
+      "resultDigest": "0c967ed43850496ddd72e58beaf76c9b291b763f360c803ded871f37e1623e37",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-manifest:limitations#numeric-key-lookup",
+      "verdict": "identical",
+      "resultDigest": "33a9dd6605a53195d0fdea541a8bd281fcc1e1ec271bdad73887ca513eab82ee",
+      "mk3Operation": "common.view/table-data-source"
+    },
+    {
+      "id": "mk2-manifest:limitations#references",
+      "verdict": "identical",
+      "resultDigest": "58f8d69afdf25eb75350e3fa91ff741e6bd6eeba437749a38e18b83cdf14d038",
+      "mk3Operation": "relic-ucs language references ($<key> in Lua documents)"
+    },
+    {
+      "id": "mk2-manifest:limitations#editing",
+      "verdict": "identical",
+      "resultDigest": "2c27533ef98528de7c1605a412e6c85ecbfe714e2eb6788ea2a6c5aff352ee24",
+      "mk3Operation": "edit.content (handler edit-ucs)"
+    },
+    {
+      "id": "mk2-manifest:limitations#fallback",
+      "verdict": "identical",
+      "resultDigest": "0f94e5cbfb1af9a27bb4f37682bc5abff256097d75ee3d99a09d2889309adf99",
+      "mk3Operation": "not carried (planned: a missing key read from the English table through the mod chain, Dawn of War plan item 1)"
+    },
+    {
+      "id": "mk2-manifest:limitations#export",
+      "verdict": "identical",
+      "resultDigest": "0f94e5cbfb1af9a27bb4f37682bc5abff256097d75ee3d99a09d2889309adf99",
+      "mk3Operation": "not carried (planned: export.convert of the table, with the Dawn of War resources tree, plan item 7)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "1441e6e0b3644d5449bfbe2bdefbe97f87d90429681057f26323a9a0d0c6fb10",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "mk3Operation": "none: MK2 declared no operations"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-ucs/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-ucs.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-manifest:limitations#encoding-detection",
+        "mk2-manifest:limitations#numeric-key-lookup",
+        "mk2-manifest:limitations#references",
+        "mk2-manifest:limitations#editing",
+        "mk2-manifest:limitations#fallback",
+        "mk2-manifest:limitations#export",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

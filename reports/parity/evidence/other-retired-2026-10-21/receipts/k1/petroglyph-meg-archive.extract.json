@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "codec": "petroglyph-meg",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the bytes of every entry written into each synthetic archive, the encrypted ones included",
+    "suite": "modkit-extensions-other/test/behavior/k1-petroglyph-receipts.test.ts",
+    "samples": [
+      {
+        "name": "format1.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 1 })",
+        "sha256": "675b7cd4fc2bb521fe5883e502ebc7d473b9d298ceaa050934b07894b2f9003a"
+      },
+      {
+        "name": "format2.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 2 })",
+        "sha256": "0c724866a8252ee46be0914bf32fe20fbf79f7d25f837f6045a2a86dfd84213c"
+      },
+      {
+        "name": "format3.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES, { version: 3 })",
+        "sha256": "e1814a517fe26f800f1e195bd43eb0cb9650014681804ca9748ea88fc159ac57"
+      },
+      {
+        "name": "grey-goo-encrypted.meg",
+        "builder": "modkit-extensions-other/test/behavior/petroglyph-fixtures.ts#meg(MEG_FILES with flags 1, { encrypted: true })",
+        "sha256": "d6c182257157eef83d9074621807fe15c1b0955758475f5646ca56f3a4266e4d"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:format1.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9cb7487000bc86ac36ce83c4acfabe8878552be99572a6770f65ab1d048a5c48",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format1.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ea1ae7d0abec9afde83283106c67190f9b5204014739944500284c0dd2d3d657",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format1.meg:Data/Audio/empty.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format2.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9cb7487000bc86ac36ce83c4acfabe8878552be99572a6770f65ab1d048a5c48",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format2.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ea1ae7d0abec9afde83283106c67190f9b5204014739944500284c0dd2d3d657",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format2.meg:Data/Audio/empty.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format3.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9cb7487000bc86ac36ce83c4acfabe8878552be99572a6770f65ab1d048a5c48",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format3.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ea1ae7d0abec9afde83283106c67190f9b5204014739944500284c0dd2d3d657",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:format3.meg:Data/Audio/empty.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:grey-goo-encrypted.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+      "verdict": "identical",
+      "resultDigest": "9cb7487000bc86ac36ce83c4acfabe8878552be99572a6770f65ab1d048a5c48",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:grey-goo-encrypted.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+      "verdict": "identical",
+      "resultDigest": "ea1ae7d0abec9afde83283106c67190f9b5204014739944500284c0dd2d3d657",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:grey-goo-encrypted.meg:Data/Audio/empty.wav:container.extract",
+      "verdict": "identical",
+      "resultDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:format1.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+        "synthetic:format1.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+        "synthetic:format1.meg:Data/Audio/empty.wav:container.extract",
+        "synthetic:format2.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+        "synthetic:format2.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+        "synthetic:format2.meg:Data/Audio/empty.wav:container.extract",
+        "synthetic:format3.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+        "synthetic:format3.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+        "synthetic:format3.meg:Data/Audio/empty.wav:container.extract",
+        "synthetic:grey-goo-encrypted.meg:DATA/ART/MODELS/UNIT.ALO:container.extract",
+        "synthetic:grey-goo-encrypted.meg:DATA/XML/GAMEOBJECTS.XML:container.extract",
+        "synthetic:grey-goo-encrypted.meg:Data/Audio/empty.wav:container.extract"
+      ]
+    }
+  ]
+}

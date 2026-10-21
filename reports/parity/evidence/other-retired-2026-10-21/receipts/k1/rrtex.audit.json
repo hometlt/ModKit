@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "codec": "rrtex",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/relic/essence/codecs/rrtex at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "image.rrtex",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rrtexSample",
+        "sha256": "481f1db1d9fefe32d375fa2d025f3d2c23b3ef506e37662138e1640c3c55ab1f"
+      },
+      {
+        "name": "red.rtx",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rtxSample",
+        "sha256": "2d5882db91db1eb37ab52e055a1ecc98141df296abe8e90d3726ae9c939dc33b"
+      },
+      {
+        "name": "attrib.v2.sga",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#buildSga(2, SGA_FILES)",
+        "sha256": "1aeb16e8cf425b9d6c4304921a1c8571a4b49bdda68d1095d796bc900a70a4bf"
+      },
+      {
+        "name": "model.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#chunkySample",
+        "sha256": "770e3e2077f8b35c943d1001f644e9f5a5790234c54de4eeb6e7bc1d4a8b113f"
+      },
+      {
+        "name": "mk2 codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rrtex/codec.manifest.json",
+        "sha256LF": "02946c98c55d922f3fdffea858ea1138e5c8e622224de4eb92af7addbb30fef5"
+      },
+      {
+        "name": "mk2 src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rrtex/src/detect.ts",
+        "sha256LF": "baa322a7d6ac80fb359300cec2d820163975bf942f7b2d41705ea7f99e70d7cc"
+      },
+      {
+        "name": "mk2 src/index.ts",
+        "fixture": "references/modkitmk2/extensions/relic/essence/codecs/rrtex/src/index.ts",
+        "sha256LF": "cc4795006a5cc546010480f4ef387be747061a184b64f833f89e2011dd314587"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts",
+      "verdict": "identical",
+      "resultDigest": "604e75a2fc72b884ab3dc51c4fad69243f4f3b0ce89a34d1b0b7f8469aea638e",
+      "mk3Operation": "probe (rrtex manifest probe plan) over image.rrtex, red.rtx, attrib.v2.sga, model.whm"
+    },
+    {
+      "id": "mk2-source:rrtexCodec+default rrtexCodec",
+      "verdict": "identical",
+      "resultDigest": "050d8660bc8b4413068b2847d96609e18c1908f5a13b78b494bfea7b46c7624c",
+      "mk3Operation": "view.inspect, container.extract"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "7e39f758a9ab107e2a07a9e492653c36d3a3890770ca3268c7ca4e2748351b3d",
+      "mk3Operation": "spec.match.extensions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "bb7ea5dbfaa590a33bddeef136fc953709553bc0f71d46c6259b33cc0bb83fef",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rrtex/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts",
+        "mk2-source:rrtexCodec+default rrtexCodec",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

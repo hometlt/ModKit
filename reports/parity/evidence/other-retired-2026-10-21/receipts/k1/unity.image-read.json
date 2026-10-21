@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "codec": "unity",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.raster-image-source",
+    "oracle": "the pixels written into each image of the sample (DXT1 faces as their RGB565 colour), top-down RGBA",
+    "suite": "modkit-extensions-other/test/behavior/k1-unity-image-receipts.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unitytex",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unitytex",
+        "sha256": "179c50516a2158e07f77aefa244ebde803fbe6b6b9710ef390841551d464601b"
+      },
+      {
+        "name": "Sky.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(DXT1 cubemap of dxt1Solid faces)",
+        "sha256": "82189bbea8269c4fa802c00b16304a4afe96468c33148b418ab23289421fbc1f"
+      },
+      {
+        "name": "Layers.unitytex",
+        "builder": "modkit-extensions-other/test/behavior/unity-fixtures.ts#mkxTexture(RGB24 2D array)",
+        "sha256": "b3e691e023c9d1fdb0b61d06f2142aaa273be5c05cae3af4692d89d16e85ed60"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:minimal.unitytex:info",
+      "verdict": "identical",
+      "resultDigest": "de7128f21624097224adbefb312b61847420b1d6887e522a2a348a831c996624",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:minimal.unitytex:image-0",
+      "verdict": "identical",
+      "resultDigest": "14a8c0a6803bcb5a1485f2dd3d521f17932505d367903ef948981b86022e061e",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:info",
+      "verdict": "identical",
+      "resultDigest": "bd21f84a2afb9f0f462108c60565a3c643ebb97618220c4ed3fc85bd149457fa",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-0",
+      "verdict": "identical",
+      "resultDigest": "b82438ea6e292206b65502c5dee9b2a7ba21cad46c230e3981ec691fdb4fe449",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-1",
+      "verdict": "identical",
+      "resultDigest": "2349700c261952d812af77ea8824dec5a5b0cddc2ca47f881c22f7819625d5f4",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-2",
+      "verdict": "identical",
+      "resultDigest": "0087dc6d84ccc5271cba8758c08439116b0582e26d5418b2436ee717793424b8",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-3",
+      "verdict": "identical",
+      "resultDigest": "dd4bafac51704b55ba8d411d8eae8036a8379d7369f433b2fae6aaf35d9d9d3f",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-4",
+      "verdict": "identical",
+      "resultDigest": "9af5276301e22942ba37684bdec09baa241ca01519630969c72818319bb9fb27",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Sky.unitytex:face-5",
+      "verdict": "identical",
+      "resultDigest": "5a8ce2c015211e761b6e2d59c166705a36319bbd24ecfbb9c47930f6ce2ab498",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Layers.unitytex:info",
+      "verdict": "identical",
+      "resultDigest": "f568044ccb68e11fb2239c9e3a8d65c321200118e03aaaead596e14532a3a9cf",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Layers.unitytex:layer-0",
+      "verdict": "identical",
+      "resultDigest": "0812b28301194fe04a45469933ed214bb4ad02f0e33678a9c8b3c299ec765aa6",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:Layers.unitytex:layer-1",
+      "verdict": "identical",
+      "resultDigest": "9e2435903fb3186019e257ddcef53df46b8450a51434c3032f49abb02251f825",
+      "mk3Operation": "common.view/raster-image-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unity/operation/image.read",
+      "kind": "operation",
+      "legacyOperation": "image.read",
+      "adapterOperation": "view.raster-image-source",
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/unity-engine/contributions/codec-unity.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:minimal.unitytex:info",
+        "synthetic:minimal.unitytex:image-0",
+        "synthetic:Sky.unitytex:info",
+        "synthetic:Sky.unitytex:face-0",
+        "synthetic:Sky.unitytex:face-1",
+        "synthetic:Sky.unitytex:face-2",
+        "synthetic:Sky.unitytex:face-3",
+        "synthetic:Sky.unitytex:face-4",
+        "synthetic:Sky.unitytex:face-5",
+        "synthetic:Layers.unitytex:info",
+        "synthetic:Layers.unitytex:layer-0",
+        "synthetic:Layers.unitytex:layer-1"
+      ]
+    }
+  ]
+}

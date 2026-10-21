@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-par",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "container.extract",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-receipts.test.ts",
+    "samples": [
+      {
+        "name": "EARTH2150.par",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE, 3)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:EARTH2150.par:_summary.json:container.extract",
+      "verdict": "identical",
+      "resultDigest": "767de72a0d561a5bf19672d00322b0ad295896bc1b9b12d880020999c87048e0",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:EARTH2150.par:entities.json:container.extract",
+      "verdict": "identical",
+      "resultDigest": "4a0b0cbf84bae7ae20f5985fbb34c09db643deb90c70b07fa89eef138c842792",
+      "mk3Operation": "container.extract"
+    },
+    {
+      "id": "synthetic:EARTH2150.par:research.json:container.extract",
+      "verdict": "identical",
+      "resultDigest": "59455107f387e09b2c6b9319d55231e14bbae3b1e7a2d7467235e0b7da9ab375",
+      "mk3Operation": "container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:EARTH2150.par:_summary.json:container.extract",
+        "synthetic:EARTH2150.par:entities.json:container.extract",
+        "synthetic:EARTH2150.par:research.json:container.extract"
+      ]
+    }
+  ]
+}

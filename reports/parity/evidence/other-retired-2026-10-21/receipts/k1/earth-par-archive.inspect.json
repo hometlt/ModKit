@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth-par",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic file",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth-receipts.test.ts",
+    "samples": [
+      {
+        "name": "EARTH2150.par",
+        "builder": "modkit-extensions-other/test/behavior/earth-archives.ts#par(PAR_DATABASE, 3)"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:EARTH2150.par:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "483081c3a1fa1d95208c7e30f7359af2c98aa055b799b24e388b500e6572296d",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+      "executed": true,
+      "caseIds": ["synthetic:EARTH2150.par:view.inspect"]
+    }
+  ]
+}

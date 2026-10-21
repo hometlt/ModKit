@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "codec": "halo-era",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the summary and the entry bytes written into each synthetic archive",
+    "suite": "modkit-extensions-other/test/behavior/k1-archive-receipts.test.ts",
+    "samples": [
+      {
+        "name": "every-method.era",
+        "builder": "modkit-extensions-other/test/behavior/synthetic-archives.ts#era"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:every-method.era:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "70b11deae32f6df3cf17a8d3c016abb79ac14b4b816915f9bdaf61719d150583",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "executed": true,
+      "caseIds": ["synthetic:every-method.era:view.inspect"]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "codec": "earth2160-model",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the positions (with their PivotMatrix), triangles, normals, colours, UV sets, locator and light matrices and SKN weights written into the synthetic files, read as MK2 read them",
+    "suite": "modkit-extensions-other/test/behavior/k1-earth2160-receipts.test.ts",
+    "samples": [
+      {
+        "name": "Fixture.kfr",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedKfr",
+        "sha256": "47117a0a6de13e55d10c6840e94dd9b9edf17e010754fbd3099f4baf8c29ba14"
+      },
+      {
+        "name": "A_CH_GJ_02_1_B.kfr",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#markerKfr",
+        "sha256": "b567adca52c9d80c6449cf943414bc9a0a7d2a5cd3242029c666d326e14144a5"
+      },
+      {
+        "name": "Fixture.skn",
+        "builder": "modkit-extensions-other/test/behavior/earth-models.ts#framedSkn",
+        "sha256": "60cb3ddc76224179528eb7f1fe4b5c98d871c7215fdf99ba7d22a98caaaf9844"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:Fixture.kfr:info",
+      "verdict": "identical",
+      "resultDigest": "47af0841e49deba98aa54a06f52353e1c477b7a6eaa2d8d5dace0fbc2a7c2f40",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:Fixture.kfr:nodes",
+      "verdict": "identical",
+      "resultDigest": "43234bdcbaed900df8a9dc67b412dd421f1935782ecd1fb4d906e369939a9618",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:Fixture.kfr:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "f209f8221a459b78647af689f3eed7f07549302445c4bedb476cbba2405c273f",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:A_CH_GJ_02_1_B.kfr:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "8f0335fd67e3a05eac3bc811d335e0d6344919d89c489664deace574c15cd513",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:Fixture.skn:skin",
+      "verdict": "identical",
+      "resultDigest": "39b3c5c718ec66673dcc670f915d67017cfc69af7f233ba25e121b9ae7e66cbe",
+      "mk3Operation": "common.view/model-scene-source, common.view/model-skeleton-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:Fixture.kfr:info",
+        "synthetic:Fixture.kfr:nodes",
+        "synthetic:Fixture.kfr:primitive-0",
+        "synthetic:A_CH_GJ_02_1_B.kfr:primitive-0",
+        "synthetic:Fixture.skn:skin"
+      ]
+    }
+  ]
+}

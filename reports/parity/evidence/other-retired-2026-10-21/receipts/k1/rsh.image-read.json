@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "codec": "rsh",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.raster-image-source",
+    "oracle": "the pixels written into each image of the synthetic texture, top-down RGBA",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "shader.rsh",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rshSample",
+        "sha256": "36422fbd4e85256def1989534a92d9e3773197b749732b945fe733ac5fff876f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:shader.rsh:info",
+      "verdict": "identical",
+      "resultDigest": "ab541cd5f529a89c701beb46356b66be4add56d3e712b807d29829a60142a88d",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:shader.rsh:frame-0",
+      "verdict": "identical",
+      "resultDigest": "e5f1602c36508453714960ec5237e42c1dec37fc8ade1785654feb3ca3b9e8fe",
+      "mk3Operation": "common.view/raster-image-source"
+    },
+    {
+      "id": "synthetic:shader.rsh:frame-1",
+      "verdict": "identical",
+      "resultDigest": "18b33273754c23273036fb1cade5cb058e17196333bf2309bcf97933549910b0",
+      "mk3Operation": "common.view/raster-image-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rsh/operation/image.read",
+      "kind": "operation",
+      "legacyOperation": "image.read",
+      "adapterOperation": "view.raster-image-source",
+      "targetDataSource": {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rsh.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:shader.rsh:info",
+        "synthetic:shader.rsh:frame-0",
+        "synthetic:shader.rsh:frame-1"
+      ]
+    }
+  ]
+}

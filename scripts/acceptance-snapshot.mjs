@@ -40,7 +40,6 @@ const REPOSITORIES = [
   'modkit-extensions-warzone',
   'modkit-extensions-ea',
   'modkit-extensions-annihilation',
-  'modkit-extensions-other',
   'modkit-extensions-ensemble',
   'modkit-extensions-unreal',
   'modkit-extensions-facefx',

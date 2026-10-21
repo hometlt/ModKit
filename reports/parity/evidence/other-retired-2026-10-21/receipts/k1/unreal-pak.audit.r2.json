@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "codec": "unreal-pak",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.unreal.pak",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.unreal.pak",
+        "sha256": "dd0928ff87ca30fd91378f272b8271587acb36c95741463c3eedc70f2f0058be"
+      },
+      {
+        "name": "minimal.texture2d.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.texture2d.uasset",
+        "sha256": "4b314fe1cb2a707457b4ae2d64eed4e7200cc85fa8417eaa9e222655e05f7a77"
+      },
+      {
+        "name": "mk2 codecs/unreal-pak/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/codec.manifest.json",
+        "sha256LF": "3c9dff99460366ff4e117c29a4dd7c3928f9f3e7f881a5a1dfdaec7417a201b9"
+      },
+      {
+        "name": "mk2 codecs/unreal-pak/src/detect.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/detect.ts",
+        "sha256LF": "507a771094619d30bb76a47b7ea698cc4a8b96c0af4a17c36268021d1695ecb3"
+      },
+      {
+        "name": "mk2 codecs/unreal-pak/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts",
+        "sha256LF": "1be669baa3177603e5b2ff66a15e480008d8498754ab217bfb84170528216724"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/detect.ts#detectHeader",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "unreal-pak/pak.ts parsePakFooter (the footer magic in the tail)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseUnrealPakFooter",
+      "verdict": "identical",
+      "resultDigest": "2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3",
+      "mk3Operation": "unreal-pak/pak.ts parsePakFooter"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseUnrealPakArchive+parseUnrealPakSourceArchive",
+      "verdict": "identical",
+      "resultDigest": "64b5fbe07c274ee03aea6f18405135c7b1253cf88478408ee65177bb76f6b91b",
+      "mk3Operation": "unreal-pak/pak.ts readPakIndex (namespace-entry-source)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#unrealPakCodec (entry extraction)",
+      "verdict": "identical",
+      "resultDigest": "32db09d96de2bffc8dd4cd1373fcee3cd50d2237e9ffe5b96c6d5abe9dc763cc",
+      "mk3Operation": "container entries (S3) opened by the host (container.extract)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseUnrealPakAesKey+decryptUnrealPakAes",
+      "verdict": "identical",
+      "resultDigest": "a0f7681c704f9a85690f2a7babc8867ad8af9b420f8e2c98e54f621c57d1711d",
+      "mk3Operation": "host credential broker epic-games/unreal-aes (adopt, symmetricKeyHex) + shared/keys.ts keyRingOf + codec-kit crypto/aes"
+    },
+    {
+      "id": "mk2-source:src/index.ts#readIndexBytes (index SHA-1 verification)",
+      "verdict": "identical",
+      "resultDigest": "bf131838eb1620720fea2b5b0faefdc7449a33853616df2ff69e28fdf535d1f8",
+      "mk3Operation": "unreal-pak/pak.ts checkIndexHash (codec-kit crypto/sha1-digest)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parseUnrealPakArchive (frozen index)",
+      "verdict": "identical",
+      "resultDigest": "cee28998c55cc53a310a1ed157060ee89e990b01659b378d2ca4ddeedc619c9b",
+      "mk3Operation": "unreal-pak/pak.ts: pak-frozen-index (the codec describes the footer instead)"
+    },
+    {
+      "id": "mk2-source:src/index.ts#parsePathHashArchive (path hash index validation)",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "not carried: the path hash index is not read, so its SHA-1 is not checked (manifest limitation)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "4e803c738d3463dcda0ad5f8883d730a96acad063150a3cbbe5d97a99646d900",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "edf0e851feeb98a917b32d2c1f9a9e8f2f934f4fdd00d136c6abdac06671d6cf",
+      "mk3Operation": "view.inspect, container.extract"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/unreal-pak/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/detect.ts#detectHeader",
+        "mk2-source:src/index.ts#parseUnrealPakFooter",
+        "mk2-source:src/index.ts#parseUnrealPakArchive+parseUnrealPakSourceArchive",
+        "mk2-source:src/index.ts#unrealPakCodec (entry extraction)",
+        "mk2-source:src/index.ts#parseUnrealPakAesKey+decryptUnrealPakAes",
+        "mk2-source:src/index.ts#readIndexBytes (index SHA-1 verification)",
+        "mk2-source:src/index.ts#parseUnrealPakArchive (frozen index)",
+        "mk2-source:src/index.ts#parsePathHashArchive (path hash index validation)",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

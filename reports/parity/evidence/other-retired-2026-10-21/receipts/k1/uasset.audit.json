@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "codec": "uasset",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "source-feature-audit",
+    "oracle": "every export of the MK2 source (references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset at 1a14ba4eddd0ae88de273348ebd44cfb98a0581d) and its manifest, against the MK3 module that carries it",
+    "suite": "modkit-extensions-other/test/behavior/k1-unreal-audits.test.ts",
+    "samples": [
+      {
+        "name": "minimal.soundwave.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.soundwave.uasset",
+        "sha256": "a0ae6817bebfbeae4a9ccc1be7d28805be785fc1c5b6ecc6d408de60b2330323"
+      },
+      {
+        "name": "minimal.staticmesh.uasset",
+        "fixture": "modkit-extensions-other/test/fixtures/mk2-synthetic/minimal.staticmesh.uasset",
+        "sha256": "6723839f8ce16424dc1e4ecc242da062bc179127cc22fb7ee24136d39697b08c"
+      },
+      {
+        "name": "mk2 codecs/uasset/codec.manifest.json",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/codec.manifest.json",
+        "sha256LF": "7628e7177e3f483d58263c6a8d329a862461d78bddc75d112340fb77219254f8"
+      },
+      {
+        "name": "mk2 codecs/uasset/src/index.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/index.ts",
+        "sha256LF": "0d5da3c0a9ad8b84479bceb722abda82246c0381e46d267194fecefc5560e1d3"
+      },
+      {
+        "name": "mk2 codecs/uasset/src/unreal-soundwave.ts",
+        "fixture": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
+        "sha256LF": "82361119ddc18ab74de0fb306b368cd67439d7dd358d70fb1a7782031ed44b58"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "mk2-source:src/index.ts#isUnrealSoundWaveAudio",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "unreal-package/classes.ts packageClassProbe (SoundWave)"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#extractUnrealSoundWaveAudio",
+      "verdict": "identical",
+      "resultDigest": "45fe1ccdd1ecf19f7692b1bd777e2c16d63cae291cd6fab01c3c8537e7fb74ef",
+      "mk3Operation": "uasset/soundwave-codec.ts: the stream as the entry <export>.<ext> (container.extract)"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#findEmbeddedAudio",
+      "verdict": "identical",
+      "resultDigest": "4ba78d10fbe36ccc8a186508f30fcce15ad31022688041e12258635f6ece1954",
+      "mk3Operation": "shared/embedded-media.ts findEmbeddedAudio"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.describe",
+      "verdict": "identical",
+      "resultDigest": "8a2e2a2980b7a4de64d57916e3c721859c3db0a550e7ad293abe72e888ee4183",
+      "mk3Operation": "view.inspect"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.decode",
+      "verdict": "identical",
+      "resultDigest": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "mk3Operation": "the entry opened by the host with the codec of its media type (receipt uasset.audio-decode)"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.export",
+      "verdict": "identical",
+      "resultDigest": "153c9dbcc7025ecd7e50ce6d83f1995233dfc636bc869098e3a8d84288fd938a",
+      "mk3Operation": "container.extract (raw); transcoding not carried (pending, integrator decision 2026-09-26)"
+    },
+    {
+      "id": "mk2-source:src/unreal-soundwave.ts#unrealAudioSources+resolveSiblings",
+      "verdict": "identical",
+      "resultDigest": "5688c2befdd9e464b7f39d09260bb8a933b0c9876d0f4139d59b458bcc7ef82d",
+      "mk3Operation": "spec.companions (the host binds <name>.uexp and <name>.ubulk)"
+    },
+    {
+      "id": "mk2-manifest:match.extensions",
+      "verdict": "identical",
+      "resultDigest": "859a2a110fac7a2da278d8de4933951412a3c70a7dc370a096fee3efd6d547df",
+      "mk3Operation": "spec.match.extensions + spec.companions"
+    },
+    {
+      "id": "mk2-manifest:operations",
+      "verdict": "identical",
+      "resultDigest": "1dff1428ec74444f622bc24ffb91af7c76aafe8f98490488c2c44c622ab9b770",
+      "mk3Operation": "view.inspect, container.extract, common.view/audio-media-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/uasset/audit",
+      "kind": "audit",
+      "adapterOperation": "source-feature-audit",
+      "targetOperation": "source-feature-audit",
+      "handlerId": "source-feature-audit",
+      "contribution": "modkit-extensions-other/extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
+      "executed": true,
+      "caseIds": [
+        "mk2-source:src/index.ts#isUnrealSoundWaveAudio",
+        "mk2-source:src/unreal-soundwave.ts#extractUnrealSoundWaveAudio",
+        "mk2-source:src/unreal-soundwave.ts#findEmbeddedAudio",
+        "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.describe",
+        "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.decode",
+        "mk2-source:src/unreal-soundwave.ts#unrealSoundWaveCodec.export",
+        "mk2-source:src/unreal-soundwave.ts#unrealAudioSources+resolveSiblings",
+        "mk2-manifest:match.extensions",
+        "mk2-manifest:operations"
+      ]
+    }
+  ]
+}

@@ -499,11 +499,8 @@ const OWNER_EXTERNAL_DIRECTORIES = [
   'extensions/opensource/warzone-2100/.agents/skills/modkit-warzone',
   // modkit-extensions-annihilation (MODKIT_SPRING_ROOT / sources.spring): one family.
   'extensions/opensource/spring',
-  // modkit-extensions-other (MODKIT_OTHER_EXTENSIONS_ROOT / sources.other): each entry is a real
-  // top-level extensions/<family> directory in that checkout, verified to carry real codec sources
-  // (not an empty scaffold) — the block-11 MK2→MK3 conversion's actual current homes. `ps1` predates
-  // that conversion and was already a legitimate owner; the rest were extensions/mk2/<family> in this
-  // registry until this pass repointed them (see the commit that added this comment).
+  // Historical MK2 block-11 families: these stable logical paths resolve to their current
+  // standalone owners; the retired Other checkout is not a source of executable extensions.
   'extensions/ps1',
   'extensions/adobe-flash',
   'extensions/annihilation-gas-powered',

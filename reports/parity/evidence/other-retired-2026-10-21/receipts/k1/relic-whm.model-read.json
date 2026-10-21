@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "codec": "relic-whm",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.model-scene-source",
+    "oracle": "the mesh positions, winding and bone bindings written into the synthetic WHM, in MK2's Z-up",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "marine.whm",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#whm",
+        "sha256": "bdbd9d220e5ba637ec8e71ff80c69c8f6e8cce8caa292ba34abd908650c49fdb"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:marine.whm:info",
+      "verdict": "identical",
+      "resultDigest": "bc6b1c19f2b3568a6e8833576a549fd0a35d9a9f4f62e144d033e6e39df888ce",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:marine.whm:primitive-0",
+      "verdict": "identical",
+      "resultDigest": "9ccadd6f50923923e7b099c4c8653dd62886ddfc0eab7c0ca183b7306b18fb54",
+      "mk3Operation": "common.view/model-scene-source"
+    },
+    {
+      "id": "synthetic:marine.whm:primitive-1",
+      "verdict": "identical",
+      "resultDigest": "1e81e594419eca22e384bc3a2e0afe89bb679891460afe0f596213df86a8b801",
+      "mk3Operation": "common.view/model-scene-source"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
+      "kind": "operation",
+      "legacyOperation": "model.read",
+      "adapterOperation": "view.model-scene-source",
+      "targetDataSource": {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-relic-whm.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:marine.whm:info",
+        "synthetic:marine.whm:primitive-0",
+        "synthetic:marine.whm:primitive-1"
+      ]
+    }
+  ]
+}

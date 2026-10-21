@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "codec": "rrtex",
+  "corpusKind": "synthetic",
+  "verdict": "pass",
+  "tests": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inputs": {
+    "operation": "view.inspect",
+    "oracle": "the RRTEX marker and the embedded image written after the header",
+    "suite": "modkit-extensions-other/test/behavior/k1-relic-receipts.test.ts",
+    "samples": [
+      {
+        "name": "image.rrtex",
+        "builder": "modkit-extensions-other/test/behavior/relic-fixtures.ts#rrtexSample",
+        "sha256": "481f1db1d9fefe32d375fa2d025f3d2c23b3ef506e37662138e1640c3c55ab1f"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "synthetic:image.rrtex:view.inspect",
+      "verdict": "identical",
+      "resultDigest": "e58242c3c8136dad2dbefbc7d8071a5827ec8ceba120ac8833934bf9e94b40d2",
+      "mk3Operation": "view.inspect"
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
+      "kind": "operation",
+      "legacyOperation": "image.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-other/extensions/relic-essence/contributions/codec-rrtex.json",
+      "executed": true,
+      "caseIds": [
+        "synthetic:image.rrtex:view.inspect"
+      ]
+    }
+  ]
+}
