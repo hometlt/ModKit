@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 264,
+  "contributionCount": 263,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -888,7 +888,7 @@
         {
           "id": "modkit/empire-earth-ssa",
           "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-empire-earth-ssa.json",
-          "repository": "other"
+          "repository": "empire-earth"
         }
       ],
       "codec": "empire-earth-ssa",
@@ -1189,21 +1189,15 @@
       "status": "evidence-ready"
     },
     {
-      "candidates": [
-        {
-          "id": "modkit/heroes6-orc",
-          "path": "extensions/ubisoft-heroes-6/contributions/codec-heroes6-orc.json",
-          "repository": "other"
-        }
-      ],
+      "candidates": [],
       "codec": "heroes6-orc",
       "family": "other",
       "featureAudit": "pending",
-      "pending": 3,
+      "pending": 0,
       "requirements": 3,
       "source": "extensions/ubisoft/heroes-6/codecs/heroes6-orc/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/heroes6-orc",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1753,7 +1747,7 @@
         {
           "id": "modkit/ps1-cue-bin",
           "path": "extensions/ps1/contributions/codec-ps1-cue-bin.json",
-          "repository": "other"
+          "repository": "ps1"
         }
       ],
       "codec": "ps1-cue-bin",
@@ -1770,7 +1764,7 @@
         {
           "id": "modkit/ps1-xa",
           "path": "extensions/ps1/contributions/codec-ps1-xa.json",
-          "repository": "other"
+          "repository": "ps1"
         }
       ],
       "codec": "ps1-xa",
@@ -2414,7 +2408,7 @@
         {
           "id": "modkit/sst",
           "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-sst.json",
-          "repository": "other"
+          "repository": "empire-earth"
         }
       ],
       "codec": "sst",
@@ -2566,7 +2560,7 @@
         {
           "id": "modkit/texcache",
           "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-texcache.json",
-          "repository": "other"
+          "repository": "empire-earth"
         }
       ],
       "codec": "texcache",
