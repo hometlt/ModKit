@@ -50,6 +50,7 @@ const REPOSITORIES = [
   'modkit-extensions-ps1',
   'modkit-extensions-flash',
   'modkit-extensions-documents',
+  'modkit-extensions-frostgiant',
   'modkit-extensions-petroglyph',
   'modkit-extensions-relic',
   'modkit-extensions-gas-powered',

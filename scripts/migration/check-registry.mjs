@@ -125,6 +125,9 @@ const resolvedProductPath = value => {
   if (portable.startsWith('extensions/uncommon-documents/')) {
     return path.join(externalRepositoryRoot(repoRoot, 'documents'), portable)
   }
+  if (portable.startsWith('extensions/frost-giant-stormgate/')) {
+    return path.join(externalRepositoryRoot(repoRoot, 'frostgiant'), portable)
+  }
   if (portable.startsWith('extensions/ps1/')) {
     return path.join(
       externalRepositoryRoot(repoRoot, 'ps1'),
@@ -767,6 +770,7 @@ function deriveX3Facts() {
     ['ps1', externalRepositoryRoot(repoRoot, 'ps1')],
     ['flash', externalRepositoryRoot(repoRoot, 'flash')],
     ['documents', externalRepositoryRoot(repoRoot, 'documents')],
+    ['frostgiant', externalRepositoryRoot(repoRoot, 'frostgiant')],
     ['realitypump', externalRepositoryRoot(repoRoot, 'realitypump')],
     ['petroglyph', externalRepositoryRoot(repoRoot, 'petroglyph')],
     ['relic', externalRepositoryRoot(repoRoot, 'relic')],

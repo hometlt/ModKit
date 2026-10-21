@@ -408,78 +408,71 @@
       ]
     },
     {
-      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/codec.ts",
-      "sha256Mk2": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
-      "sha256Mk3": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
-      "rewrites": []
-    },
-    {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/discovery.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/discovery.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/discovery.ts",
       "sha256Mk2": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
       "sha256Mk3": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/index.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/index.ts",
       "sha256Mk2": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
       "sha256Mk3": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/install-probe.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/install-probe.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/install-probe.ts",
       "sha256Mk2": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
       "sha256Mk3": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/ops.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/ops.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/ops.ts",
       "sha256Mk2": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
       "sha256Mk3": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/discovery.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/discovery.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/discovery.spec.ts",
       "sha256Mk2": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
       "sha256Mk3": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/index.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/index.spec.ts",
       "sha256Mk2": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
       "sha256Mk3": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/install-probe.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/install-probe.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/install-probe.spec.ts",
       "sha256Mk2": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
       "sha256Mk3": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/manifest.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/manifest.spec.ts",
       "sha256Mk2": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
       "sha256Mk3": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/ops.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/ops.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/ops.spec.ts",
       "sha256Mk2": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
       "sha256Mk3": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/real.manual.spec.ts",
-      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/real.manual.spec.ts",
+      "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/real.manual.spec.ts",
       "sha256Mk2": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
       "sha256Mk3": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
       "rewrites": []

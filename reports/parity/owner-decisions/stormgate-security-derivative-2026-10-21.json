@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "kind": "source-copy-claim-retirement",
+  "date": "2026-10-21",
+  "state": "approved",
+  "proposedBy": "Core",
+  "approvedBy": "Core technical owner",
+  "reason": "Retire only the obsolete byte-identical mechanical-copy claim after source-owner-reported embedded-key removal. The sanitized implementation remains present and is separately SHA-bound. No game/feature retirement or parity upgrade.",
+  "provenance": {
+    "humanThread": "019f4c2b-8ee0-7b61-be65-ebf4d47500d4",
+    "humanTurn": "01a15efc-4bc8-72c1-be74-966d051f310e",
+    "humanItem": "01a15efc-4d3b-7f00-91e9-23e4cd166366",
+    "independentHumanReadback": true,
+    "coreParent": "d7c0cf1ed861ded6e6aabdd4a235fab7968b10f4",
+    "oldRepositoryCommit": "13a274861436ae2b4d42da5e7e5b68728db9b1ec",
+    "targetRepositoryCommit": "7a6807b51dd9096dcc74d236eaa48fd4f259041b",
+    "ownerReceiptSha256": "207acde63b0887b6a5d7d4de16ffc6cbb59faeb5740261c2a3891c004d319d72"
+  },
+  "retiredMechanicalCopyRows": [
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/codec.ts",
+      "sha256Mk2": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+      "sha256Mk3": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+      "rewrites": []
+    }
+  ],
+  "remainingMechanicalCopyRows": [
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/discovery.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/discovery.ts",
+      "sha256Mk2": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
+      "sha256Mk3": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/index.ts",
+      "sha256Mk2": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
+      "sha256Mk3": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/install-probe.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/install-probe.ts",
+      "sha256Mk2": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
+      "sha256Mk3": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/ops.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/ops.ts",
+      "sha256Mk2": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
+      "sha256Mk3": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/discovery.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/discovery.spec.ts",
+      "sha256Mk2": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
+      "sha256Mk3": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/index.spec.ts",
+      "sha256Mk2": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
+      "sha256Mk3": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/install-probe.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/install-probe.spec.ts",
+      "sha256Mk2": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
+      "sha256Mk3": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/manifest.spec.ts",
+      "sha256Mk2": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
+      "sha256Mk3": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/ops.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/ops.spec.ts",
+      "sha256Mk2": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
+      "sha256Mk3": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/real.manual.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/real.manual.spec.ts",
+      "sha256Mk2": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
+      "sha256Mk3": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
+      "rewrites": []
+    }
+  ],
+  "derivative": {
+    "classification": "authored-security-sanitized-derivative",
+    "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
+    "formerDestination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/codec.ts",
+    "destination": "modkit-extensions-frostgiant/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/codec.ts",
+    "sourceSha256": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+    "formerMechanicalDestinationSha256": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+    "sanitizedTargetSha256": "4cdd56f620ef1686cb4806a8cec726b20bf8b98d74d04d3d9656b4bddc6c48ab",
+    "targetCommit": "7a6807b51dd9096dcc74d236eaa48fd4f259041b",
+    "changeDescription": "Source owner removed embedded keys before initial target publication. This metadata stores no original key values, replacement text or source bodies.",
+    "admission": "separate exact target SHA verification; explicitly NOT a successful mechanical copy or an accepted rewrite transform"
+  },
+  "additionalRedactedSourceOutsideActiveCopies": {
+    "path": "extensions/frost-giant-stormgate/src/lib/mk2/stormgate/stormgate-archive.ts",
+    "oldCommittedSha256": "673d8a93dd9405e42b9cdff5b1c7758432866b35f6dbfbaf3ffe64b30e4e9409",
+    "newTargetSha256": "a02e0e27533675147543948602823077006d67762c9143bd1a81cc994d42a31f",
+    "activeCopyRow": false
+  },
+  "consumerSemantics": {
+    "mechanicalCheckerUnmodified": true,
+    "mechanicalRowsRelocated": 10,
+    "mechanicalClaimsRetired": 1,
+    "receiptAutomaticallyValidatedByMechanicalChecker": false,
+    "separateReceiptAndTargetHashVerificationRequired": true,
+    "featureStatusChanged": false,
+    "gameDropped": false,
+    "requirementsChanged": false,
+    "parityClaim": false,
+    "sourceApplyAck": false
+  },
+  "approval": {
+    "scope": "single obsolete byte-copy claim classification only; not new human authorization, game retirement, source apply or full-gate PASS",
+    "representationReviewedBy": "root/stormgate_post_audit metadata PRE; coordinated by Integrator",
+    "existingHumanAuthorization": "Finish the Stormgate repository transfer and coordinate its verification; independently read original user turn/item in provenance.",
+    "sourceCutoverActualPRE": "No current named PRE report existed before the already-completed source cutover. This metadata PRE does not retroactively supply one.",
+    "sourcePOSTVerdict": "CONDITIONAL_GO_NATIVE_FUNCTIONALITY_PRESERVED",
+    "sourceBefore": "13a274861436ae2b4d42da5e7e5b68728db9b1ec",
+    "sourceAfter": "8af562bf5b3e65e60076ffbd676ecb60b1eab0b9",
+    "target": "7a6807b51dd9096dcc74d236eaa48fd4f259041b",
+    "proofBindings": [
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/integrator-audit/report.md",
+        "sha256": "2db0397e4f31ba2e947bbd88e72df7f0a3ea6811c2219bf6ad25cc347ba366d7"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/integrator-audit/audit.json",
+        "sha256": "117f41555b92213c9df9ac5afad52d87da9316cc2fb92907aadc6921e17bbc8d"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/integrator-audit/metadata-pre-review.md",
+        "sha256": "eb3146bf26ea03e6c6a7b84835f7230a4104ac512e196f0b1a3cd162cc027f87"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/receipt.json",
+        "sha256": "207acde63b0887b6a5d7d4de16ffc6cbb59faeb5740261c2a3891c004d319d72"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/bounded-final.json",
+        "sha256": "4cd2654f3cbeaa929a17ae22aeda0d61f3d6495b49430708f9593252b8f0ddfe"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/bounded-commands-attempt2.json",
+        "sha256": "18d97124ca6dd683dc7846ae7c1df49ce99598b71bb62f49753c8a92fa2739d7"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/bounded-commands.json",
+        "sha256": "42bb08d761dc55cccada92f4f30c4aa4399c6effec498e10da176e1b911c1ca7"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/canonical-focused.log",
+        "sha256": "aaed66d538a4dfcd2c6d588934907102e2a984cbe02b1ca2d9b0aac6b3586be2"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/canonical-mk2-suite.log",
+        "sha256": "f0c3f81000c005b5c2f67dbe9bb2fd88bbca11775ddb5068a0a37a22560bc8af"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/frostgiant-repository.log",
+        "sha256": "395dde6da138f39997f1511d4c29a1cfef3f6f0153644285d2e202583a193f17"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/frostgiant-credentials.log",
+        "sha256": "76651313037b785a2ce547414ff94c45a5144eb68120e68de88788472fad855b"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/attempt2-canonical-focused.log",
+        "sha256": "aaed66d538a4dfcd2c6d588934907102e2a984cbe02b1ca2d9b0aac6b3586be2"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/attempt2-canonical-mk2-suite.log",
+        "sha256": "50a179d9ea99200320dc6c861253b474620131b86c438bb0636d038ad58a8137"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/attempt2-frostgiant-repository.log",
+        "sha256": "54334c69353fddad8a5494b194dd79037c900bd68bf760dd44e845bff70dfb39"
+      },
+      {
+        "path": "C:/MKTEMP/stormgate-cutover-final-20261021/core-metadata/attempt2-frostgiant-credentials.log",
+        "sha256": "3320c95682b79a65359344f12c669de776bdd895aa32fc1d8418fdeda2e09d9a"
+      }
+    ],
+    "boundedChecks": "Unmodified checker passes 10 claims; synthetic one-byte read tamper refuses. Separate derivative SHA positive/negative, canonical copy suite, repository secret guard/pack and credential synthetic tests pass.",
+    "firstAttemptFailuresRetained": "Initial copy-suite cleanup TEMP separator mismatch and missing pnpm repository-test context remain logged separately. Only runner/environment corrected; checker/tests/baselines unchanged."
+  }
+}

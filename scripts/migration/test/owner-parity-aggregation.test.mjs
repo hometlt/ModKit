@@ -20,6 +20,7 @@ const sameRootEnvironment = {
   MODKIT_WARZONE_ROOT: coreRoot,
   MODKIT_FLASH_ROOT: coreRoot,
   MODKIT_DOCUMENTS_ROOT: coreRoot,
+  MODKIT_FROSTGIANT_ROOT: coreRoot,
 }
 
 test('legacy extension paths resolve to their current repository owner', () => {
@@ -35,6 +36,9 @@ test('legacy extension paths resolve to their current repository owner', () => {
   assert.equal(ownerOfLegacyExtension('extensions/uncommon-documents/src/pdf/codec.js'), 'documents')
   assert.equal(ownerOfLegacyExtension('extensions/adobe-flash-extra'), 'core')
   assert.equal(ownerOfLegacyExtension('extensions/uncommon-documents-extra'), 'core')
+  assert.equal(ownerOfLegacyExtension('extensions/frost-giant-stormgate'), 'frostgiant')
+  assert.equal(ownerOfLegacyExtension('extensions/frost-giant-stormgate/src/installation/discovery.ts'), 'frostgiant')
+  assert.equal(ownerOfLegacyExtension('extensions/frost-giant-stormgate-extra'), 'core')
   assert.equal(ownerOfLegacyExtension('extensions/documents'), 'core')
   assert.equal(ownerOfLegacyExtension('extensions/common/images'), 'core')
   assert.equal(

@@ -13,6 +13,7 @@ export const OWNER_REPOSITORIES = Object.freeze([
   Object.freeze({ id: 'ps1', repository: 'modkit-extensions-ps1' }),
   Object.freeze({ id: 'flash', repository: 'modkit-extensions-flash' }),
   Object.freeze({ id: 'documents', repository: 'modkit-extensions-documents' }),
+  Object.freeze({ id: 'frostgiant', repository: 'modkit-extensions-frostgiant' }),
   Object.freeze({ id: 'spring', repository: 'modkit-extensions-annihilation' }),
   Object.freeze({ id: 'warzone', repository: 'modkit-extensions-warzone' }),
 ])
@@ -43,6 +44,7 @@ const LEGACY_EXTENSION_PREFIXES = Object.freeze([
   Object.freeze({ prefix: 'extensions/stainless-steel-studios-empire-earth', owner: 'empire-earth', strip: 1, prepend: ['extensions'] }),
   Object.freeze({ prefix: 'extensions/adobe-flash/', owner: 'flash', strip: 1, prepend: ['extensions'] }),
   Object.freeze({ prefix: 'extensions/uncommon-documents/', owner: 'documents', strip: 1, prepend: ['extensions'] }),
+  Object.freeze({ prefix: 'extensions/frost-giant-stormgate/', owner: 'frostgiant', strip: 1, prepend: ['extensions'] }),
   Object.freeze({ prefix: 'extensions/common/', owner: 'core', strip: 2, prepend: ['extensions'] }),
 ])
 
@@ -67,6 +69,7 @@ export function repositoryRoots(coreRoot, environment = process.env) {
     ps1: externalRepositoryRoot(coreRoot, 'ps1', environment),
     flash: externalRepositoryRoot(coreRoot, 'flash', environment),
     documents: externalRepositoryRoot(coreRoot, 'documents', environment),
+    frostgiant: externalRepositoryRoot(coreRoot, 'frostgiant', environment),
     spring: externalRepositoryRoot(coreRoot, 'spring', environment),
     warzone: externalRepositoryRoot(coreRoot, 'warzone', environment),
   })
