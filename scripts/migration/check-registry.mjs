@@ -119,6 +119,12 @@ const resolvedProductPath = value => {
       portable.slice('extensions/opensource/spring/'.length),
     )
   }
+  if (portable.startsWith('extensions/adobe-flash/')) {
+    return path.join(externalRepositoryRoot(repoRoot, 'flash'), portable)
+  }
+  if (portable.startsWith('extensions/uncommon-documents/')) {
+    return path.join(externalRepositoryRoot(repoRoot, 'documents'), portable)
+  }
   if (portable.startsWith('extensions/ps1/')) {
     return path.join(
       externalRepositoryRoot(repoRoot, 'ps1'),
@@ -759,6 +765,8 @@ function deriveX3Facts() {
     ['other', externalRepositoryRoot(repoRoot, 'other')],
     ['empire-earth', externalRepositoryRoot(repoRoot, 'empire-earth')],
     ['ps1', externalRepositoryRoot(repoRoot, 'ps1')],
+    ['flash', externalRepositoryRoot(repoRoot, 'flash')],
+    ['documents', externalRepositoryRoot(repoRoot, 'documents')],
     ['realitypump', externalRepositoryRoot(repoRoot, 'realitypump')],
     ['petroglyph', externalRepositoryRoot(repoRoot, 'petroglyph')],
     ['relic', externalRepositoryRoot(repoRoot, 'relic')],

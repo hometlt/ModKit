@@ -24,14 +24,14 @@
   "copies": [
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/detect.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/detect.ts",
       "sha256Mk2": "504ff12bc69619e958fc2395b9c1722b744a0bba66f10a1346ed37aed7a8b00b",
       "sha256Mk3": "504ff12bc69619e958fc2395b9c1722b744a0bba66f10a1346ed37aed7a8b00b",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/index.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/index.ts",
       "sha256Mk2": "713f1712949f511c71a143df075620c00b92a11d06eea8edc5e9020dc3141df2",
       "sha256Mk3": "56de6a785a8093e1d56e8f7678b07f0343d85a2aa3d6946918394fa1b201039e",
       "rewrites": [
@@ -40,21 +40,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/test/fla-project.spec.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/test/fla-project.spec.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/test/fla-project.spec.ts",
       "sha256Mk2": "2aed900e8b13242f7f24a9faab071a72c196880810846d2e7616fb1e1574220a",
       "sha256Mk3": "2aed900e8b13242f7f24a9faab071a72c196880810846d2e7616fb1e1574220a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/flv/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/detect.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/detect.ts",
       "sha256Mk2": "f3be6b248ac5f5d2ede632ab6494ff06f1711015828dd8047b34e47c3768d45a",
       "sha256Mk3": "f3be6b248ac5f5d2ede632ab6494ff06f1711015828dd8047b34e47c3768d45a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/flv/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/index.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/index.ts",
       "sha256Mk2": "75f487d74bbe5c1b13034d7791ae2dc266627bb82d612e071ccd92f37bc221c2",
       "sha256Mk3": "dc2bdb1be8adf50f389beb1c2d2f4b60a86b1c473dd233797ced039158a66344",
       "rewrites": [
@@ -63,14 +63,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/swf/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/detect.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/detect.ts",
       "sha256Mk2": "bb9bbda439a0376ff5a2472ac562a83d01bd404311e8a79b0e612ab0e8987b70",
       "sha256Mk3": "bb9bbda439a0376ff5a2472ac562a83d01bd404311e8a79b0e612ab0e8987b70",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/adobe/flash/codecs/swf/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/index.ts",
+      "destination": "modkit-extensions-flash/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/index.ts",
       "sha256Mk2": "bb3bc8c2d57489f43ef7a77ccdcc4dbfa2b77edd8e0c396e34518ac4e7821c6f",
       "sha256Mk3": "3d476ae1dc0fbe799c5209d9b08fdb8dea3d74c1f85b8923f568c51c49561eed",
       "rewrites": [
@@ -794,7 +794,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/index.ts",
       "sha256Mk2": "9b989d3a9269e97b21ba247701dce7ee4c72d659b55a3d549d8623be4de57b78",
       "sha256Mk3": "d3feda2ecabc72036fa2a4818b12aca38118c450921f4d57b2e7653ada49e102",
       "rewrites": [
@@ -803,7 +803,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -812,7 +812,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/test/index.spec.ts",
       "sha256Mk2": "7bad34f0ba8a93f0b84d8df644617dc9e5a2771b1c95d4b372d8ab6ac64b567c",
       "sha256Mk3": "3ea8979be0b61a164c91a4b7cbac2090700c7668d0c57da6729ef1628251d234",
       "rewrites": [
@@ -821,14 +821,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/blend/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/src/index.ts",
       "sha256Mk2": "f568b2e56e2b0385ee79be0d4055bd8158f0443323878d92567c8f6d53c0c5c0",
       "sha256Mk3": "f568b2e56e2b0385ee79be0d4055bd8158f0443323878d92567c8f6d53c0c5c0",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/blend/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/test/index.spec.ts",
       "sha256Mk2": "f25b8b6427df7ecac79d9cb1cc26e8741d732000afaf706c5eb5589fbee78982",
       "sha256Mk3": "3452e3603eb93316bff4646d5f93bd50af8be99046598551303febe52cb76617",
       "rewrites": [
@@ -837,7 +837,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/index.ts",
       "sha256Mk2": "29933a552c2e38427b05c36b5599298807eec1cf333f6324cec1011fdd34f33e",
       "sha256Mk3": "54713df0a2c3ea08f4054b6d5db2c7cda83dd6b42b94687d0c1cbb61554b23f6",
       "rewrites": [
@@ -846,7 +846,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -855,7 +855,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/test/index.spec.ts",
       "sha256Mk2": "3cf3a05e0fc65eac0f3d56d6cd190962e0755fe043bfb98447f9521d8eda584a",
       "sha256Mk3": "b969476257fc9d44832d5c92c941de1ba6cabb003ea33fedfe1add3b35a94f6e",
       "rewrites": [
@@ -864,7 +864,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/index.ts",
       "sha256Mk2": "7dd8f2bca053250862310938a21ae50b718c4605f1eded0f716dc2de0921f0b2",
       "sha256Mk3": "129830dc7ea97020d4dff5f6936b6f7dbbf5fc7603522e49b1d9a7dcc5b1599e",
       "rewrites": [
@@ -873,7 +873,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/viewer.ts",
       "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
       "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
       "rewrites": [
@@ -882,7 +882,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/test/index.spec.ts",
       "sha256Mk2": "e7a102cfa4b7fb9294f6563dcbb7292f179726362f9055a741c7bffbd74f2244",
       "sha256Mk3": "255a7bcd557ccb7b3b0a3d787332d81f206b2336b43ab9cfd473c4e5a009f7f8",
       "rewrites": [
@@ -891,7 +891,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/index.ts",
       "sha256Mk2": "36b2182e0f74bfb333e6ba8f0f0525cadd78c8b93d2481e1ba5469ee7f3affa3",
       "sha256Mk3": "b4fa43257301950142d84ad1a3189c4614962fcba8792d50a4af920379c8b689",
       "rewrites": [
@@ -900,7 +900,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -909,7 +909,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/test/codec.spec.ts",
       "sha256Mk2": "1a54edb586c47bfd21672e3f95246f663465ff47375cc3da8c3adcdf0d33fbb1",
       "sha256Mk3": "bbbe4b0a83685baf9337d7cf2ef4c434bb0e87bf784e7519b634abdf6db3d175",
       "rewrites": [
@@ -918,7 +918,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/index.ts",
       "sha256Mk2": "a1d712a982a3034d44c8477a0f26a1a7c40da0aaf0a8a347fa894dd4b189bea2",
       "sha256Mk3": "0f95e7f28439b136eee46bd188a49d75679b6165b9eb6518caae1efb9887a7c3",
       "rewrites": [
@@ -927,7 +927,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -936,7 +936,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/test/index.spec.ts",
       "sha256Mk2": "c3ef07955c7387948096a00c528eedfdf3c449cfab7987b14da27e2502814007",
       "sha256Mk3": "57cd03ebb49aab1f07de5cc79c3ec208cb6149860223ab23362dac33ecfcb6af",
       "rewrites": [
@@ -945,7 +945,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/index.ts",
       "sha256Mk2": "3c9d3b53705b80a659189be1adc8ed717a7d40c856ea8f418f23d719eb8a472b",
       "sha256Mk3": "702bb95681584005c20dcd6452e463139393550efaf45deeb5795c60035a3551",
       "rewrites": [
@@ -954,7 +954,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -963,7 +963,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/test/index.spec.ts",
       "sha256Mk2": "b1b966c64d94f37f5c075000064663ed5d52e3b6d8854b606000e20eb426fa66",
       "sha256Mk3": "15a4858c265d14caef9e4687a74dd919bc42702368af44b05ef5e15bc756ba21",
       "rewrites": [
@@ -972,7 +972,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/index.ts",
       "sha256Mk2": "b86398a936a0faf83db443e23b60a21b758a17ce43f6da2f51a975f78286ad92",
       "sha256Mk3": "b50277204f9fa322cb2038e9bfea018032b16ee03a2476bb0f7cd12291c4e391",
       "rewrites": [
@@ -981,7 +981,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/viewer.ts",
       "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
       "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
       "rewrites": [
@@ -990,7 +990,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/test/index.spec.ts",
       "sha256Mk2": "f02fa58c55a2b4530a24f0ef8aa7873f36ada18cd89fc51987f84dbe3da7812a",
       "sha256Mk3": "801f141778e27bd40013be4a3649d958b05561fd7f5083f6cce45c9c1e0003a8",
       "rewrites": [
@@ -999,21 +999,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/max/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/src/index.ts",
       "sha256Mk2": "e8839eb6bad13707b533380002b9f326e9965906677d3417584332cd5c16bf39",
       "sha256Mk3": "e8839eb6bad13707b533380002b9f326e9965906677d3417584332cd5c16bf39",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/max/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/test/manifest.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/test/manifest.spec.ts",
       "sha256Mk2": "95ac9348b0a22380051c3e0d90e2cf374271ff8a2db1314b4df5ff200dfc08ac",
       "sha256Mk3": "95ac9348b0a22380051c3e0d90e2cf374271ff8a2db1314b4df5ff200dfc08ac",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/index.ts",
       "sha256Mk2": "09e52c4412e97ddbddbe04ac0c1462e31c1c27c698b8c4cb61b12562bb5d9365",
       "sha256Mk3": "a92534dbda44abdeb2d8fa609cf4359614d496a82b4e37e328cfe041467de6ac",
       "rewrites": [
@@ -1022,7 +1022,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1031,7 +1031,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/test/codec.spec.ts",
       "sha256Mk2": "7f02b1a03bf255c735fa7feae6b5368a3c3e17ee23629a7421e9e8792dc9965c",
       "sha256Mk3": "579255c4f52c545702e2997ccb821a9b5028ae9855b6c572d2e6ae1f09e4a07f",
       "rewrites": [
@@ -1040,7 +1040,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/index.ts",
       "sha256Mk2": "51e286cd5531693b755ff647cfc7fd9dca1125ac7ce0e068256c1c0e43793646",
       "sha256Mk3": "0c9814f4273a008eeceddc4587de03ad6f43c172328b962fac4ecc6d8716f1e6",
       "rewrites": [
@@ -1049,7 +1049,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1058,7 +1058,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/test/codec.spec.ts",
       "sha256Mk2": "7a6ec5969cc42b5fae2a78fac1f10de204d8fa47a1fefa91b6b935e65d5de91f",
       "sha256Mk3": "0ec03df6fa1a5292579fffec98808160ff1e1c72814ec42b31104f5544caa690",
       "rewrites": [
@@ -1067,7 +1067,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/index.ts",
       "sha256Mk2": "bb53282524427f59b9829ae17dd2158ec8e37758cfbf09b61aed406c11707b35",
       "sha256Mk3": "6db128ab666efdba82a1d0a3613882fed1d4241e75a8f477c183bf643c265a9b",
       "rewrites": [
@@ -1076,7 +1076,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1085,7 +1085,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/test/codec.spec.ts",
       "sha256Mk2": "d449a19f0bf9749b5ebe66814a2bacd16f8b1392e1c1d59db7848ece7da7d1e2",
       "sha256Mk3": "4fb90a4ba047039a91f9a32246263c9f2b5da2349a94b9a647ec2876ef9273e5",
       "rewrites": [
@@ -1094,7 +1094,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/index.ts",
       "sha256Mk2": "550985f291cd3b7285f63cf794913f2fbcb5c40b6414a1f88b78d57831ddfe9a",
       "sha256Mk3": "e87bf5679e967a544f446783e1149a8652d735b9f158a6533204db0050717a38",
       "rewrites": [
@@ -1103,7 +1103,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1112,7 +1112,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/test/index.spec.ts",
       "sha256Mk2": "de717502f1a5247e457010957b78637706358eb991e85231222fb6b853f31c83",
       "sha256Mk3": "5a0e57d4ea1f54c2125dc66e111bce98783b020327f120f1623fbba3a7263b48",
       "rewrites": [
@@ -1121,7 +1121,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/index.ts",
       "sha256Mk2": "40bd2045d17f79ba54d44e2531418b2c5b883841cf01e7216e7af10fc5759f4a",
       "sha256Mk3": "3e62922be2c61de29d42470ffbdc3911bc49688b2ee0af28208f8f793523358b",
       "rewrites": [
@@ -1130,7 +1130,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1139,7 +1139,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/test/codec.spec.ts",
       "sha256Mk2": "b0854deb8c97b7a0ada73937447e9ad12ea7ed5612039bf6e28b0c7f51771039",
       "sha256Mk3": "8058bcdf453a8211e26b72cd5b8df8d812a2fa6a039738de06a021a9e1f032cc",
       "rewrites": [
@@ -1148,21 +1148,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/psd/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/src/index.ts",
       "sha256Mk2": "b5541343912bb870024c4129499b6a1f459f9dbc9eec6a32ceb89ef35bf615e5",
       "sha256Mk3": "b5541343912bb870024c4129499b6a1f459f9dbc9eec6a32ceb89ef35bf615e5",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/psd/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/test/manifest.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/test/manifest.spec.ts",
       "sha256Mk2": "91c7442eb0cb10c88880ec75b873d35200a3fda56d9874fa94b4177863c41337",
       "sha256Mk3": "91c7442eb0cb10c88880ec75b873d35200a3fda56d9874fa94b4177863c41337",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/index.ts",
       "sha256Mk2": "0e0b99aab1e5c57152e51652b8ad5f7b2d3962248fa77e3c0ca60ef33900d23f",
       "sha256Mk3": "fdedce5b666482da4b4c1ee581001a43e951a3fd629a4f3528ebf3b3a69389e8",
       "rewrites": [
@@ -1171,7 +1171,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/viewer.ts",
       "sha256Mk2": "5a880b41f6350a11076cb90443b32f59430f8fa56dfbe2eb5b25a25f55a39e16",
       "sha256Mk3": "3161cf83bfa85a52858455751720189d55429d917ef9271dd3b3f6553bb19c28",
       "rewrites": [
@@ -1180,7 +1180,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/test/index.spec.ts",
       "sha256Mk2": "9ff3832d5be60a3e371ee14adcaa788143005984f0f0ab48e809f0f4b5c473b0",
       "sha256Mk3": "17f87f8a59aec5124790ff1a0e6dc84f802c0ca1195df3d6ad007a190116c6ac",
       "rewrites": [
@@ -1189,7 +1189,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/index.ts",
       "sha256Mk2": "1eeaa7e1f4f3250a59fab3e8d9130fe7d1f1140754eaa6ade5725d17858a3df8",
       "sha256Mk3": "3aae548ef68b552f9802b790ec96e9d3b0f76c778c08afd73e88835d4ff030a8",
       "rewrites": [
@@ -1198,7 +1198,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/viewer.ts",
       "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
       "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
       "rewrites": [
@@ -1207,7 +1207,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/test/index.spec.ts",
       "sha256Mk2": "1502538b97d5b678386a28f776ac06369a439258bd76fa97fbb70f2b0e483564",
       "sha256Mk3": "346f175001a98035799189ce10caee73bf55991c6e406170214c2d02034923ec",
       "rewrites": [
@@ -1216,7 +1216,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/index.ts",
       "sha256Mk2": "0806edabc110da2a86556e49e90353f0b0c1c0af9eef37c14f812043148d8df5",
       "sha256Mk3": "608db0b0427b1056b0c5f66e047589fd317cbcbe1085e64ddb0d9e3aed7b6183",
       "rewrites": [
@@ -1225,7 +1225,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1234,7 +1234,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/test/index.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/test/index.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/test/index.spec.ts",
       "sha256Mk2": "1cc26dcc2244015df3564eaba737cb1bda6c949b8bb873064f53db2806b0900e",
       "sha256Mk3": "e4a71923acf4fa67d2252a77e7862922bae2263a262f8b224aef3426abbda777",
       "rewrites": [
@@ -1243,7 +1243,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/index.ts",
       "sha256Mk2": "78238918fb0e2798e3005c4de27ba9a4438e79d7f4e4b9ff79d4601f39175d46",
       "sha256Mk3": "c8d0383f338439acb75f7c242b7f84f7e444e46966c0d89fd3f6ad6652f1bdb8",
       "rewrites": [
@@ -1252,7 +1252,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/src/viewer.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/viewer.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/viewer.ts",
       "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
       "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
       "rewrites": [
@@ -1261,7 +1261,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/test/codec.spec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/test/codec.spec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/test/codec.spec.ts",
       "sha256Mk2": "7f2a536c4d446c5672fa2f637aac5369e200b7c3cece5c01c441f32543f28e1e",
       "sha256Mk3": "7cb027159839b7e2c1b4c5284ef5b65a57f409178dbafb3d673f151202b92281",
       "rewrites": [
@@ -1270,7 +1270,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/codec.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/codec.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/codec.ts",
       "sha256Mk2": "8e59f1897783e02982b2b08d8213f4fb1b4612ffa7bba39a127b152c1a258606",
       "sha256Mk3": "e37e87bba67a90b342fe39f6e30306a230634565dd0d3c9ad579702e42213204",
       "rewrites": [
@@ -1279,7 +1279,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/index.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/index.ts",
       "sha256Mk2": "bd99325ed28000be428af3f3eb88d3e9f423f751f5874cfcc3efdc7cf1939d90",
       "sha256Mk3": "a350e31bcfb7d0ff6d70abe49f1fd5cda63f5c7f21764cf2f26cbd5515438419",
       "rewrites": [
@@ -1288,7 +1288,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/parsers.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/parsers.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/parsers.ts",
       "sha256Mk2": "de63f81a75057d6abfc18e1787b2c8614d4ba581c52c19f7fb7bab8e077cdae5",
       "sha256Mk3": "5764df11402199175bd4a71e36aa89132c66b3449c193a2a31ba1668461957a7",
       "rewrites": [
@@ -1297,7 +1297,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/security.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/security.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/security.ts",
       "sha256Mk2": "a8567b330303f1dcbdb648c857a93f5660f71f8c4dc3b1f9ab74bb788094fbcc",
       "sha256Mk3": "307c334e81e8bd354c7a892b4e63ec5ee3d22dc990cf9a55fc46d78b04c183e4",
       "rewrites": [
@@ -1306,7 +1306,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/view-model.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/view-model.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/view-model.ts",
       "sha256Mk2": "2d8dd2b569deba14fbd479ef30ab6ced0c5de1930563494b084f7a61bed6df84",
       "sha256Mk3": "593573592bf0cafb00d1e810d2b9b4f4363f77d4693b52f84fc08dc9b69d5084",
       "rewrites": [
@@ -1315,7 +1315,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/src/webview.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/webview.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/src/webview.ts",
       "sha256Mk2": "bf78e5c286817163a572fd7078b7359292f25d5ab0b749256498b0a7f0190bda",
       "sha256Mk3": "e4603fb37f172b84049dd6d3dba2165db7169765e16ebc8aa99ff21da376d418",
       "rewrites": [
@@ -1324,7 +1324,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/test/viewer-harness.ts",
-      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/test/viewer-harness.ts",
+      "destination": "modkit-extensions-documents/extensions/uncommon-documents/src/lib/mk2/documents/test/viewer-harness.ts",
       "sha256Mk2": "1054f7a66ead7c0945504a86be06e71c7137eddfcc76f5397037ab37420977c8",
       "sha256Mk3": "c3610f281328054d24f52a299a699937984343754afce3d699582448445da894",
       "rewrites": [

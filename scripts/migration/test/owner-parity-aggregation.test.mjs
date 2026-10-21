@@ -18,6 +18,8 @@ const sameRootEnvironment = {
   MODKIT_OTHER_EXTENSIONS_ROOT: coreRoot,
   MODKIT_SPRING_ROOT: coreRoot,
   MODKIT_WARZONE_ROOT: coreRoot,
+  MODKIT_FLASH_ROOT: coreRoot,
+  MODKIT_DOCUMENTS_ROOT: coreRoot,
 }
 
 test('legacy extension paths resolve to their current repository owner', () => {
@@ -27,6 +29,13 @@ test('legacy extension paths resolve to their current repository owner', () => {
   assert.equal(ownerOfLegacyExtension('extensions/opensource/warzone-2100'), 'warzone')
   assert.equal(ownerOfLegacyExtension('extensions/ps1'), 'ps1')
   assert.equal(ownerOfLegacyExtension('extensions/stainless-steel-studios-empire-earth'), 'empire-earth')
+  assert.equal(ownerOfLegacyExtension('extensions/adobe-flash'), 'flash')
+  assert.equal(ownerOfLegacyExtension('extensions/adobe-flash/src/swf/codec.js'), 'flash')
+  assert.equal(ownerOfLegacyExtension('extensions/uncommon-documents'), 'documents')
+  assert.equal(ownerOfLegacyExtension('extensions/uncommon-documents/src/pdf/codec.js'), 'documents')
+  assert.equal(ownerOfLegacyExtension('extensions/adobe-flash-extra'), 'core')
+  assert.equal(ownerOfLegacyExtension('extensions/uncommon-documents-extra'), 'core')
+  assert.equal(ownerOfLegacyExtension('extensions/documents'), 'core')
   assert.equal(ownerOfLegacyExtension('extensions/common/images'), 'core')
   assert.equal(
     resolveLegacyExtension(coreRoot, 'extensions/common/images', sameRootEnvironment),

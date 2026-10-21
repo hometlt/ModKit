@@ -48,6 +48,8 @@ const REPOSITORIES = [
   'modkit-extensions-fmod',
   'modkit-extensions-empire-earth',
   'modkit-extensions-ps1',
+  'modkit-extensions-flash',
+  'modkit-extensions-documents',
   'modkit-extensions-petroglyph',
   'modkit-extensions-relic',
   'modkit-extensions-gas-powered',
