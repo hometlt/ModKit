@@ -233,7 +233,7 @@
         {
           "id": "modkit/bink",
           "path": "extensions/rad-game-tools-video/contributions/codec-bink.json",
-          "repository": "other"
+          "repository": "rad"
         }
       ],
       "codec": "bink",
@@ -312,7 +312,7 @@
         {
           "id": "modkit/bnk",
           "path": "extensions/audiokinetic-wwise/contributions/codec-bnk.json",
-          "repository": "other"
+          "repository": "wwise"
         }
       ],
       "codec": "bnk",
@@ -990,7 +990,7 @@
         {
           "id": "modkit/fsb",
           "path": "extensions/firelight-fmod/contributions/codec-fsb.json",
-          "repository": "other"
+          "repository": "fmod"
         }
       ],
       "codec": "fsb",
@@ -2324,7 +2324,7 @@
         {
           "id": "modkit/smacker",
           "path": "extensions/rad-game-tools-video/contributions/codec-smacker.json",
-          "repository": "other"
+          "repository": "rad"
         }
       ],
       "codec": "smacker",
@@ -3153,7 +3153,7 @@
         {
           "id": "modkit/wem",
           "path": "extensions/audiokinetic-wwise/contributions/codec-wem.json",
-          "repository": "other"
+          "repository": "wwise"
         }
       ],
       "codec": "wem",
@@ -3272,7 +3272,7 @@
         {
           "id": "modkit/wwise-pck",
           "path": "extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
-          "repository": "other"
+          "repository": "wwise"
         }
       ],
       "codec": "wwise-pck",
