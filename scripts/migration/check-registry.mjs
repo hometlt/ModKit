@@ -121,7 +121,15 @@ const resolvedProductPath = value => {
   }
   if (portable.startsWith('extensions/ps1/')) {
     return path.join(
-      externalRepositoryRoot(repoRoot, 'other'),
+      externalRepositoryRoot(repoRoot, 'ps1'),
+      'extensions',
+      portable.slice('extensions/'.length),
+    )
+  }
+  if (portable.startsWith('extensions/stainless-steel-studios-empire-earth/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'empire-earth'),
+      'extensions',
       portable.slice('extensions/'.length),
     )
   }
@@ -749,6 +757,8 @@ function deriveX3Facts() {
     ['ea', externalRepositoryRoot(repoRoot, 'ea')],
     ['spring', externalRepositoryRoot(repoRoot, 'spring')],
     ['other', externalRepositoryRoot(repoRoot, 'other')],
+    ['empire-earth', externalRepositoryRoot(repoRoot, 'empire-earth')],
+    ['ps1', externalRepositoryRoot(repoRoot, 'ps1')],
     ['realitypump', externalRepositoryRoot(repoRoot, 'realitypump')],
     ['petroglyph', externalRepositoryRoot(repoRoot, 'petroglyph')],
     ['relic', externalRepositoryRoot(repoRoot, 'relic')],

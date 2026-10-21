@@ -25,7 +25,8 @@ test('legacy extension paths resolve to their current repository owner', () => {
   assert.equal(ownerOfLegacyExtension('extensions/blizzard/models'), 'blizzard')
   assert.equal(ownerOfLegacyExtension('extensions/opensource/spring'), 'spring')
   assert.equal(ownerOfLegacyExtension('extensions/opensource/warzone-2100'), 'warzone')
-  assert.equal(ownerOfLegacyExtension('extensions/ps1'), 'other')
+  assert.equal(ownerOfLegacyExtension('extensions/ps1'), 'ps1')
+  assert.equal(ownerOfLegacyExtension('extensions/stainless-steel-studios-empire-earth'), 'empire-earth')
   assert.equal(ownerOfLegacyExtension('extensions/common/images'), 'core')
   assert.equal(
     resolveLegacyExtension(coreRoot, 'extensions/common/images', sameRootEnvironment),

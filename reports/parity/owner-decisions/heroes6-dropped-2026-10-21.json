@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/owner-dropped",
+  "date": "2026-10-21",
+  "reason": "Owner-requested removal of Heroes VI on 2026-10-21, relayed by Integrator with human turn 01a15e1c-f9d1-7061-87ef-bf7b249e027e. No replacement or implementation/parity claim. Frozen legacy requirements and historical receipts remain; three active mechanical copy rows are preserved verbatim in this decision before retirement.",
+  "provenance": {
+    "humanTurnId": "01a15e1c-f9d1-7061-87ef-bf7b249e027e",
+    "humanItemId": "01a15e1c-fad5-7d01-8b07-1bb52faa6336",
+    "humanQuoteRelayedByIntegrator": "[stainless-steel-studios-empire-earth](C:/MODDING/modkit-extensions-other/extensions/stainless-steel-studios-empire-earth) и [ps1](C:/MODDING/modkit-extensions-other/extensions/ps1) переннеси в тодельный репозитории. [ubisoft-heroes-6](C:/MODDING/modkit-extensions-other/extensions/ubisoft-heroes-6) удали",
+    "suppliedByThread": "01a13e7a-9001-76f0-b5ff-a0e8c3ca8b3e",
+    "verification": "Integrator independently reverified read_thread(turnLimit:1) and supplied the verbatim human item; Core records that attributed evidence, not an independent readback.",
+    "sourceCoreCommit": "b4aae832653c8445b72b8ce9b985b6c6673bf49d",
+    "sourceDeclaration": "migration/mk2-copy/other.json",
+    "sourceDeclarationSha256": "e1ce552e830948e804752beb077b338e3c3da6020b27a02c8943a2859d606202",
+    "sourceOracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
+  },
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/audit",
+      "class": "removed-by-owner",
+      "where": "Heroes VI is withdrawn from the project by the referenced human decision. These frozen legacy requirements are owner-dropped, not implemented or replaced. Physical cutover is recorded separately by Integrator."
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
+      "class": "removed-by-owner",
+      "where": "Heroes VI is withdrawn from the project by the referenced human decision. These frozen legacy requirements are owner-dropped, not implemented or replaced. Physical cutover is recorded separately by Integrator."
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
+      "class": "removed-by-owner",
+      "where": "Heroes VI is withdrawn from the project by the referenced human decision. These frozen legacy requirements are owner-dropped, not implemented or replaced. Physical cutover is recorded separately by Integrator."
+    }
+  ],
+  "retiredCopyPins": [
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/detect.ts",
+      "sha256Mk2": "bc0caa6c606130cd0a9fcf7a83176ce5f42e3d98ceaedb6f80fe08747ec3a31f",
+      "sha256Mk3": "eb5231b3142006c1989f5de0e84950085d005f8ec1f32615b6b40ee88021be1f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/index.ts",
+      "sha256Mk2": "bfb306687cd37b84635dd14dff027e3424932c082a8a0bb756d4b10ab25982a9",
+      "sha256Mk3": "4e3cf021576ad258e333e1cb8606660121b39b768d84beb2cc691edc0ae9c8ac",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
+      "sha256Mk2": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
+      "sha256Mk3": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
+      "rewrites": []
+    }
+  ],
+  "preservedPriorLedgerRows": [
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
+      "status": "pending"
+    }
+  ],
+  "qualification": {
+    "claim": "owner retirement decision only; no format implementation or parity acceptance",
+    "physicalCutoverEvidence": "Recorded separately in the Integrator integration receipt; this decision does not assert source deletion has occurred."
+  }
+}

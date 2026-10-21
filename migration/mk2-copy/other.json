@@ -749,7 +749,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/src/index.ts",
+      "destination": "modkit-extensions-empire-earth/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/src/index.ts",
       "sha256Mk2": "70e55d36836d942882b0f4e68ecd5485608fc63ca083e4f8780693ca2daff18c",
       "sha256Mk3": "381a4d3926e6e1f516df31d533708caf0ca7e435580b2d4e24bce550d5346387",
       "rewrites": [
@@ -758,7 +758,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/archive.spec.ts",
+      "destination": "modkit-extensions-empire-earth/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/archive.spec.ts",
       "sha256Mk2": "e3719398deb29ba721189297d5dff40015bea95e8ea8a47e27ed4d341aebaa4c",
       "sha256Mk3": "2ff897623278e0716b8a4bccb3b367ed5b5726775abfff598a315c9715ed290d",
       "rewrites": [
@@ -767,7 +767,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/manifest.spec.ts",
+      "destination": "modkit-extensions-empire-earth/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/manifest.spec.ts",
       "sha256Mk2": "270de79e63752c7489e853f7be8e57b025e46d7d2974ad51984fa969df7d3b5c",
       "sha256Mk3": "f20fd009cd94f1fb55c6bc4b3b1c867673254ff799f5d6966b38ddcf75e1e1de",
       "rewrites": [
@@ -776,7 +776,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/sst/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/sst/src/index.ts",
+      "destination": "modkit-extensions-empire-earth/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/sst/src/index.ts",
       "sha256Mk2": "bff449de65062ef705ff30884097d58fed0cc250f88fbe50da5bad33c77b7eaf",
       "sha256Mk3": "7ed434880c50c8a96f333c60a632da0c0fac3f506982fb1f4b8265034c39d343",
       "rewrites": [
@@ -785,37 +785,12 @@
     },
     {
       "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/texcache/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/texcache/src/index.ts",
+      "destination": "modkit-extensions-empire-earth/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/texcache/src/index.ts",
       "sha256Mk2": "1075f5962adeff7e711ef9f3bbaec59643d0a603482c0992193f111951becf2d",
       "sha256Mk3": "64580077b5fe01b61607736443a62f80ad7c2c6ce1d48310bd83e1563b8cbaaa",
       "rewrites": [
         "line-ending-normalization"
       ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/detect.ts",
-      "sha256Mk2": "bc0caa6c606130cd0a9fcf7a83176ce5f42e3d98ceaedb6f80fe08747ec3a31f",
-      "sha256Mk3": "eb5231b3142006c1989f5de0e84950085d005f8ec1f32615b6b40ee88021be1f",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/index.ts",
-      "sha256Mk2": "bfb306687cd37b84635dd14dff027e3424932c082a8a0bb756d4b10ab25982a9",
-      "sha256Mk3": "4e3cf021576ad258e333e1cb8606660121b39b768d84beb2cc691edc0ae9c8ac",
-      "rewrites": [
-        "line-ending-normalization"
-      ]
-    },
-    {
-      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
-      "sha256Mk2": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
-      "sha256Mk3": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
-      "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/src/index.ts",

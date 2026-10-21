@@ -6752,22 +6752,18 @@ capabilities:
       - 'legacy:extensions/ubisoft/heroes-6/codecs/heroes6-orc/codec.manifest.json'
     hostFacilities:
       - 'read-source'
-    mk3Contributions:
-      - 'modkit/heroes6-orc'
-    mk3Operations:
-      - 'asset.validate'
-      - 'export.raw'
-      - 'view.inspect'
+    mk3Contributions: []
+    mk3Operations: []
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/heroes6-orc'
-      portFamily: 'mk2/ubisoft-heroes-6'
+      state: 'absent'
+      x3ContributionId: null
+      portFamily: null
       portVerdict: null
-    migrationState: 'implemented'
-    supportState: 'partial'
-    runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    migrationState: 'missing'
+    supportState: 'unsupported'
+    runtimeAvailability: 'none'
+    evidenceLevel: 'E0'
+    hostEvidence: 'none'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -6788,7 +6784,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - 'dropped by owner decision 2026-10-21; see reports/parity/owner-decisions/heroes6-dropped-2026-10-21.json'
     receipts:
       projection: null
       materialization: null

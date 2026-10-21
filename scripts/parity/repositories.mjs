@@ -9,6 +9,8 @@ export const OWNER_REPOSITORIES = Object.freeze([
   Object.freeze({ id: 'blizzard', repository: 'modkit-extensions-blizzard' }),
   Object.freeze({ id: 'ea', repository: 'modkit-extensions-ea' }),
   Object.freeze({ id: 'other', repository: 'modkit-extensions-other' }),
+  Object.freeze({ id: 'empire-earth', repository: 'modkit-extensions-empire-earth' }),
+  Object.freeze({ id: 'ps1', repository: 'modkit-extensions-ps1' }),
   Object.freeze({ id: 'spring', repository: 'modkit-extensions-annihilation' }),
   Object.freeze({ id: 'warzone', repository: 'modkit-extensions-warzone' }),
 ])
@@ -35,7 +37,8 @@ const LEGACY_EXTENSION_PREFIXES = Object.freeze([
     prepend: ['extensions', 'spring-recoil'],
   }),
   Object.freeze({ prefix: 'extensions/opensource/warzone-2100', owner: 'warzone', strip: 3 }),
-  Object.freeze({ prefix: 'extensions/ps1', owner: 'other', strip: 1, prepend: ['extensions'] }),
+  Object.freeze({ prefix: 'extensions/ps1', owner: 'ps1', strip: 1, prepend: ['extensions'] }),
+  Object.freeze({ prefix: 'extensions/stainless-steel-studios-empire-earth', owner: 'empire-earth', strip: 1, prepend: ['extensions'] }),
   Object.freeze({ prefix: 'extensions/common/', owner: 'core', strip: 2, prepend: ['extensions'] }),
 ])
 
@@ -56,6 +59,8 @@ export function repositoryRoots(coreRoot, environment = process.env) {
     blizzard: externalRepositoryRoot(coreRoot, 'blizzard', environment),
     ea: externalRepositoryRoot(coreRoot, 'ea', environment),
     other: externalRepositoryRoot(coreRoot, 'other', environment),
+    'empire-earth': externalRepositoryRoot(coreRoot, 'empire-earth', environment),
+    ps1: externalRepositoryRoot(coreRoot, 'ps1', environment),
     spring: externalRepositoryRoot(coreRoot, 'spring', environment),
     warzone: externalRepositoryRoot(coreRoot, 'warzone', environment),
   })

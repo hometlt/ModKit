@@ -2087,17 +2087,38 @@
     {
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes6-orc/audit",
-      "status": "pending"
+      "status": "owner-dropped",
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-10-21",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes6-dropped-2026-10-21.json",
+        "reason": "Owner-requested removal of Heroes VI on 2026-10-21, relayed by Integrator with human turn 01a15e1c-f9d1-7061-87ef-bf7b249e027e. No replacement or implementation/parity claim. Frozen legacy requirements and historical receipts remain; three active mechanical copy rows are preserved verbatim in this decision before retirement.",
+        "sha256": "bd116cc9f5d1a30d7e9dab6ced931e711bfc1dcc3b00b086a35d36a5cc780a3d"
+      }
     },
     {
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
-      "status": "pending"
+      "status": "owner-dropped",
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-10-21",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes6-dropped-2026-10-21.json",
+        "reason": "Owner-requested removal of Heroes VI on 2026-10-21, relayed by Integrator with human turn 01a15e1c-f9d1-7061-87ef-bf7b249e027e. No replacement or implementation/parity claim. Frozen legacy requirements and historical receipts remain; three active mechanical copy rows are preserved verbatim in this decision before retirement.",
+        "sha256": "bd116cc9f5d1a30d7e9dab6ced931e711bfc1dcc3b00b086a35d36a5cc780a3d"
+      }
     },
     {
       "evidence": [],
       "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
-      "status": "pending"
+      "status": "owner-dropped",
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-10-21",
+        "path": "modkit-core/reports/parity/owner-decisions/heroes6-dropped-2026-10-21.json",
+        "reason": "Owner-requested removal of Heroes VI on 2026-10-21, relayed by Integrator with human turn 01a15e1c-f9d1-7061-87ef-bf7b249e027e. No replacement or implementation/parity claim. Frozen legacy requirements and historical receipts remain; three active mechanical copy rows are preserved verbatim in this decision before retirement.",
+        "sha256": "bd116cc9f5d1a30d7e9dab6ced931e711bfc1dcc3b00b086a35d36a5cc780a3d"
+      }
     },
     {
       "evidence": [],

@@ -1081,14 +1081,14 @@
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
       "contribution": null,
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
-      "status": "pending",
+      "status": "owner-dropped",
       "targetOperation": null
     },
     {
@@ -1722,28 +1722,28 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-cue-bin.json",
+      "contribution": "modkit-extensions-ps1/extensions/ps1/contributions/codec-ps1-cue-bin.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-cue-bin.json",
+      "contribution": "modkit-extensions-ps1/extensions/ps1/contributions/codec-ps1-cue-bin.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "contribution": "modkit-extensions-ps1/extensions/ps1/contributions/codec-ps1-xa.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/ps1/contributions/codec-ps1-xa.json",
+      "contribution": "modkit-extensions-ps1/extensions/ps1/contributions/codec-ps1-xa.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.inspect",
       "status": "adapted",
