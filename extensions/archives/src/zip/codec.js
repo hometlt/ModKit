@@ -172,9 +172,10 @@ function withZip64Extra(extra, fields) {
 }
 
 /** Central-directory records starting at absolute `centralOffset`, parsed from their bytes. */
-function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappedCount = false) {
+function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappedCount = false, strictPackage = false, admitEntry) {
   if (count > maxEntries) throw new RangeError('ZIP entry count exceeds maxNodes budget')
   const entries = []
+  const names = strictPackage ? new Set() : undefined
   let offset = 0
   for (let index = 0; index < count || (wrappedCount && offset < central.byteLength); index += 1) {
     if (index >= maxEntries) throw new RangeError('ZIP actual entry count exceeds maxNodes budget')
@@ -192,10 +193,20 @@ function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappe
     const next = offset + 46 + nameLength + extraLength + commentLength
     if (next > central.byteLength) throw new TypeError('ZIP central-directory name is truncated')
     const nameBytes = central.subarray(offset + 46, offset + 46 + nameLength)
-    const name = safePath(
-      (flags & FLAG_UTF8_NAMES) !== 0 ? utf8.decode(nameBytes) : legacy.decode(nameBytes),
-    )
+    const decodedName = strictPackage || (flags & FLAG_UTF8_NAMES) !== 0
+      ? utf8.decode(nameBytes) : legacy.decode(nameBytes)
+    const name = safePath(decodedName)
+    if (strictPackage && decodedName !== name)
+      throw new TypeError('strict ZIP package paths must not require normalization')
     if (name === '') throw new TypeError('ZIP entries must have non-empty paths')
+    if (names?.has(name)) throw new TypeError('duplicate ZIP entry path')
+    names?.add(name)
+    if (strictPackage && (
+      u32(central, offset + 20) === MAX_U32 ||
+      u32(central, offset + 24) === MAX_U32 ||
+      u32(central, offset + 42) === MAX_U32 ||
+      extraFieldIds(central.subarray(offset + 46 + nameLength, offset + 46 + nameLength + extraLength)).includes(EXTRA_ZIP64)
+    )) throw new TypeError('ZIP64 is disabled by the strict package policy')
     const { size, compressedSize, localOffset } = withZip64Extra(
       central.subarray(offset + 46 + nameLength, offset + 46 + nameLength + extraLength),
       {
@@ -204,8 +215,7 @@ function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappe
         localOffset: u32(central, offset + 42),
       },
     )
-    entries.push(
-      Object.freeze({
+    const entry = Object.freeze({
         id: `entry-${index}`,
         name,
         kind: name.endsWith('/') ? 'directory' : 'file',
@@ -219,8 +229,10 @@ function parseCentralDirectory(central, centralOffset, count, maxEntries, wrappe
         localOffset,
         centralOffset: centralOffset + offset,
         centralLength: next - offset,
-      }),
-    )
+      })
+    if (admitEntry && admitEntry(entry) !== undefined)
+      throw new TypeError('ZIP admitEntry must be synchronous and return undefined')
+    entries.push(entry)
     offset = next
   }
   if (offset !== central.byteLength) {
@@ -245,8 +257,27 @@ function safePath(value) {
   return `${parts.join('/')}${normalized.endsWith('/') && parts.length > 0 ? '/' : ''}`
 }
 
-export function parseZipArchive(bytes, maxEntries) {
+function zipOption(options, key, value, callbackKey) {
+  if (!options || typeof options !== 'object' || Array.isArray(options) ||
+      Reflect.ownKeys(options).some(name => name !== key && name !== callbackKey) ||
+      (callbackKey && options[callbackKey] !== undefined && typeof options[callbackKey] !== 'function') ||
+      (options[key] !== undefined && options[key] !== value))
+    throw new TypeError('unsupported ZIP options')
+  return options[key] === value
+}
+
+export function parseZipArchive(bytes, maxEntries, options = {}) {
+  const strictPackage = zipOption(options, 'policy', 'strict-package', 'admitEntry')
+  if (strictPackage && (!Number.isSafeInteger(maxEntries) || maxEntries < 0))
+    throw new RangeError('ZIP maxNodes must be a non-negative safe integer')
   const tail = eocdOf(bytes, 0)
+  if (strictPackage) {
+    if (tail.zip64RecordOffset !== undefined)
+      throw new TypeError('ZIP64 is disabled by the strict package policy')
+    if (tail.eocd + 22 + u16(bytes, tail.eocd + 20) !== bytes.byteLength ||
+        tail.centralOffset + tail.centralSize !== tail.eocd)
+      throw new TypeError('strict ZIP package end records do not match the directory')
+  }
   const directory =
     tail.zip64RecordOffset === undefined
       ? tail
@@ -254,12 +285,22 @@ export function parseZipArchive(bytes, maxEntries) {
   if (directory.centralOffset + directory.centralSize > bytes.byteLength) {
     throw new TypeError('ZIP central directory is truncated')
   }
-  return parseCentralDirectory(
+  const entries = parseCentralDirectory(
     bytes.subarray(directory.centralOffset, directory.centralOffset + directory.centralSize),
     directory.centralOffset,
     directory.count,
     maxEntries,
+    false,
+    strictPackage,
+    options.admitEntry,
   )
+  if (strictPackage) {
+    for (const entry of entries) {
+      const { zip64 } = checkedLocalEntry(bytes, entry)
+      if (zip64) throw new TypeError('ZIP64 is disabled by the strict package policy')
+    }
+  }
+  return entries
 }
 
 /**
@@ -393,10 +434,14 @@ async function zipEntryTable(entries, read, size) {
   }
 }
 
-export async function extractZipArchiveEntry(bytes, entry) {
+export async function extractZipArchiveEntry(bytes, entry, options = {}) {
+  const integrity = zipOption(options, 'integrity', true)
   if (entry.kind !== 'file') throw new TypeError('directories have no byte payload')
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
     throw new TypeError('encrypted ZIP entries are unsupported')
+  if (integrity && (entry.flags & FLAG_STRONG_ENCRYPTION) !== 0)
+    throw new TypeError('encrypted ZIP entries are unsupported')
+  if (integrity) checkedLocalEntry(bytes, entry)
   const offset = entry.localOffset
   if (offset + 30 > bytes.byteLength || u32(bytes, offset) !== ZIP_LOCAL) {
     throw new TypeError('ZIP local entry header is invalid')
@@ -415,6 +460,8 @@ export async function extractZipArchiveEntry(bytes, entry) {
           })()
   if (result.byteLength !== entry.size)
     throw new TypeError('ZIP entry size does not match metadata')
+  if (integrity && crc32(result) !== entry.crc)
+    throw new TypeError('ZIP entry CRC does not match metadata')
   return result
 }
 
@@ -536,6 +583,51 @@ function checkedZip64Extra(extra, expected, allowZero = false) {
     if (actual !== value && !(allowZero && actual === 0))
       throw new TypeError('ZIP64 extra field disagrees with the directory')
   })
+}
+
+/** Local/central agreement shared by integrity reads and archive edits. */
+function checkedLocalEntry(bytes, entry, onZip64) {
+  const range = localBlockRange(bytes, entry)
+  const fields = centralFieldsOf(bytes, entry)
+  const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
+  const zip64 =
+    extraFieldIds(fields.extraBytes).includes(EXTRA_ZIP64) ||
+    extraFieldIds(localExtra).includes(EXTRA_ZIP64)
+  // Preserve the edit refusal classification even if a later header check fails.
+  onZip64?.(zip64)
+  if (fields.diskStart !== 0) throw new TypeError('multi-disk ZIP entry is unsupported')
+  checkedZip64Extra(fields.extraBytes, [
+    ...(fields.size === MAX_U32 ? [entry.size] : []),
+    ...(fields.compressedSize === MAX_U32 ? [entry.compressedSize] : []),
+    ...(u32(bytes, entry.centralOffset + 42) === MAX_U32 ? [entry.localOffset] : []),
+  ])
+  const localSize = u32(bytes, range.start + 22)
+  const localCompressed = u32(bytes, range.start + 18)
+  const localZip64 = localSize === MAX_U32 || localCompressed === MAX_U32
+  if (localZip64 && (localSize !== MAX_U32 || localCompressed !== MAX_U32))
+    throw new TypeError('ZIP64 local sizes must both use sentinels')
+  checkedZip64Extra(
+    localExtra,
+    localZip64 ? [entry.size, entry.compressedSize] : [],
+    (entry.flags & FLAG_DESCRIPTOR) !== 0,
+  )
+  const localName = bytes.subarray(range.start + 30, range.start + 30 + range.nameLength)
+  if (
+    localName.length !== fields.nameBytes.length ||
+    localName.some((byte, index) => byte !== fields.nameBytes[index]) ||
+    u16(bytes, range.start + 6) !== entry.flags ||
+    u16(bytes, range.start + 8) !== entry.method
+  )
+    throw new TypeError('local header name, flags or method disagrees with the directory')
+  const descriptor = (entry.flags & FLAG_DESCRIPTOR) !== 0
+  const matches = (raw, expected) => raw === expected || (descriptor && raw === 0)
+  if (
+    !matches(u32(bytes, range.start + 14), entry.crc) ||
+    (!localZip64 &&
+      (!matches(localSize, entry.size) || !matches(localCompressed, entry.compressedSize)))
+  )
+    throw new TypeError('local header CRC or sizes disagree with the directory')
+  return { range, zip64 }
 }
 
 function withoutZip64Extra(extra) {
@@ -693,44 +785,8 @@ function archiveEditModel(bytes, entries) {
         )
       }
       names.add(entry.name)
-      const range = localBlockRange(bytes, entry)
-      const fields = centralFieldsOf(bytes, entry)
-      const localExtra = bytes.subarray(range.start + 30 + range.nameLength, range.dataOffset)
-      zip64 ||=
-        extraFieldIds(fields.extraBytes).includes(EXTRA_ZIP64) ||
-        extraFieldIds(localExtra).includes(EXTRA_ZIP64)
-      if (fields.diskStart !== 0) throw new TypeError('multi-disk ZIP entry is unsupported')
-      checkedZip64Extra(fields.extraBytes, [
-        ...(fields.size === MAX_U32 ? [entry.size] : []),
-        ...(fields.compressedSize === MAX_U32 ? [entry.compressedSize] : []),
-        ...(u32(bytes, entry.centralOffset + 42) === MAX_U32 ? [entry.localOffset] : []),
-      ])
-      const localSize = u32(bytes, range.start + 22)
-      const localCompressed = u32(bytes, range.start + 18)
-      const localZip64 = localSize === MAX_U32 || localCompressed === MAX_U32
-      if (localZip64 && (localSize !== MAX_U32 || localCompressed !== MAX_U32))
-        throw new TypeError('ZIP64 local sizes must both use sentinels')
-      checkedZip64Extra(
-        localExtra,
-        localZip64 ? [entry.size, entry.compressedSize] : [],
-        (entry.flags & FLAG_DESCRIPTOR) !== 0,
-      )
-      const localName = bytes.subarray(range.start + 30, range.start + 30 + range.nameLength)
-      if (
-        localName.length !== fields.nameBytes.length ||
-        localName.some((byte, index) => byte !== fields.nameBytes[index]) ||
-        u16(bytes, range.start + 6) !== entry.flags ||
-        u16(bytes, range.start + 8) !== entry.method
-      )
-        throw new TypeError('local header name, flags or method disagrees with the directory')
-      const descriptor = (entry.flags & FLAG_DESCRIPTOR) !== 0
-      const matches = (raw, expected) => raw === expected || (descriptor && raw === 0)
-      if (
-        !matches(u32(bytes, range.start + 14), entry.crc) ||
-        (!localZip64 &&
-          (!matches(localSize, entry.size) || !matches(localCompressed, entry.compressedSize)))
-      )
-        throw new TypeError('local header CRC or sizes disagree with the directory')
+      const checked = checkedLocalEntry(bytes, entry, entryZip64 => { zip64 ||= entryZip64 })
+      const range = checked.range
       ranges.set(entry.id, range)
     }
     const { centralOffset, centralSize } = directory

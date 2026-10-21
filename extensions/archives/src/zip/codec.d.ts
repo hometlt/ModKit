@@ -27,13 +27,31 @@ export interface ZipArchiveEntry {
   readonly centralLength: number
 }
 
-/** The central directory of a whole ZIP in memory; ZIP64 included. */
-export function parseZipArchive(bytes: Uint8Array, maxEntries: number): readonly ZipArchiveEntry[]
+/**
+ * Default: unchanged general ZIP reading, including ZIP64 and normalized legacy names.
+ * strict-package: fatal UTF-8 names even without bit 11, no path normalization or duplicates,
+ * no ZIP64, exact EOCD/directory framing and local/central header agreement.
+ * Ratio, aggregate decoded bytes and document-specific budgets remain the caller's policy.
+ */
+export function parseZipArchive(
+  bytes: Uint8Array,
+  maxEntries: number,
+  options?: {
+    readonly policy?: 'strict-package'
+    /** Synchronous admission before appending each entry; throw to stop on caller-owned budgets. */
+    readonly admitEntry?: (entry: ZipArchiveEntry) => undefined
+  },
+): readonly ZipArchiveEntry[]
 
-/** One file entry's bytes out of a whole ZIP in memory (stored or deflate). */
+/**
+ * One file entry's bytes (stored or deflate); entry must come from this archive's directory.
+ * integrity: true additionally checks local/central headers, descriptors and decoded CRC.
+ * Default behavior remains unchanged. This does not enforce an aggregate decoded-byte budget.
+ */
 export function extractZipArchiveEntry(
   bytes: Uint8Array,
   entry: ZipArchiveEntry,
+  options?: { readonly integrity?: true },
 ): Promise<Uint8Array>
 
 /**
