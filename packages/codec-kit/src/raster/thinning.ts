@@ -40,11 +40,21 @@ export function thinBinaryMask(width: number, height: number, mask: Uint8Array, 
 /** Fill bounded four-connected zero components up to the requested area; exterior and larger
  * holes remain unchanged. Used before thinning when a caller explicitly discards raster noise. */
 export function fillSmallBinaryHoles(width: number, height: number, mask: Uint8Array, maxArea: number, signal?: AbortSignal): Uint8Array {
-  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width * height > 16_777_216 || mask.length !== width * height || !Number.isSafeInteger(maxArea) || maxArea < 0)
-    throw new RangeError('invalid hole-fill bounds')
-  const out = mask.map(v => v ? 1 : 0), seen = new Uint8Array(mask.length)
-  for (let i = 0; i < out.length; i++) {
-    if (out[i] || seen[i]) continue
+  if (!Number.isSafeInteger(maxArea) || maxArea < 0) throw new RangeError('invalid hole-fill bounds')
+  const out = mask.map(v => v ? 1 : 0)
+  for (const {cells, exterior} of binaryMaskComponents(width,height,mask,signal))
+    if (!exterior && cells.length <= maxArea) for (const p of cells) out[p] = 1
+  return out
+}
+
+/** Four-connected zero regions of a bounded binary mask; nonzero cells are barriers.
+ * Reuses the hole fill's traversal for callers needing per-region boundary constraints. */
+export function* binaryMaskComponents(width: number, height: number, mask: Uint8Array, signal?: AbortSignal): Generator<{readonly cells: readonly number[]; readonly exterior: boolean}> {
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width * height > 16_777_216 || mask.length !== width * height)
+    throw new RangeError('invalid binary component bounds')
+  const seen = new Uint8Array(mask.length)
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i] || seen[i]) continue
     signal?.throwIfAborted()
     const queue = [i]; seen[i] = 1
     let exterior = false
@@ -52,9 +62,8 @@ export function fillSmallBinaryHoles(width: number, height: number, mask: Uint8A
       const p = queue[k]!, x = p % width, y = Math.floor(p / width)
       if (!x || !y || x === width - 1 || y === height - 1) exterior = true
       for (const q of [x ? p - 1 : -1, x + 1 < width ? p + 1 : -1, y ? p - width : -1, y + 1 < height ? p + width : -1])
-        if (q >= 0 && !out[q] && !seen[q]) { seen[q] = 1; queue.push(q) }
+        if (q >= 0 && !mask[q] && !seen[q]) { seen[q] = 1; queue.push(q) }
     }
-    if (!exterior && queue.length <= maxArea) for (const p of queue) out[p] = 1
+    yield { cells: queue, exterior }
   }
-  return out
 }

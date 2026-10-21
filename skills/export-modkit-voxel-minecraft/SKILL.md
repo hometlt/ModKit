@@ -58,6 +58,13 @@ ramp corridor within three source cells of each wall, including adjacent endpoin
 Check `cliffComposition.rampFloorColumns` and native floor tops against wall tops minus 0.5.
 Submerged terrain retains its source bottom rather than snapping to a playable datum. Compare the saved native shell blocks and ramp tops against the
 cliff-only world, and inspect foot/plateau joins. The receipt records `cliffComposition`.
+Build and retain the cliff-only shell first. Terrain fills connected dry interiors to the dominant
+bordering cliff datum (up to one level upward); it never raises/rebuilds the cliffs themselves.
+Water, shell columns and ramp floors are barriers; open exterior/unanchored areas keep source height.
+Inspect `cliffComposition.assemblyOrder`, `plateauFill` and `filledPlateauColumns`; compare every shell
+block against both the retained first stage and the previous accepted cliff-only world. Check actual
+plateau top versus rim minus 0.5, as well as both ramp endpoints; unchanged cliffs alone do not prove
+that the ground reaches them. The traversal belongs to codec-kit/raster.binaryMaskComponents.
 
 
 A fully filled 528×528 terrain has 1089 saved chunks. When the wide native view contains

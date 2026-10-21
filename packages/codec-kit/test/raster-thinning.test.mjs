@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { thinBinaryMask, fillSmallBinaryHoles } from '../dist/raster/thinning.js'
+import { thinBinaryMask, fillSmallBinaryHoles, binaryMaskComponents } from '../dist/raster/thinning.js'
 
 test('narrows a broad straight band without modifying input or disconnecting its path', () => {
   const mask = new Uint8Array(15 * 15)
@@ -37,4 +37,14 @@ test('fills only small enclosed raster holes, preserving the exterior and larger
   assert.equal(out[2+2*9],1)
   assert.equal(out[5+5*9],0)
   assert.equal(mask[2+2*9],0)
+})
+
+test('reports isolated and exterior zero regions without mutating the barrier mask', () => {
+  const mask = Uint8Array.from([0,1,1,1,1, 1,0,0,1,1, 1,1,1,1,1])
+  const regions=[...binaryMaskComponents(5,3,mask)]
+  assert.deepEqual(regions,[{cells:[0],exterior:true},{cells:[6,7],exterior:false}])
+  assert.equal(mask[6],0)
+  assert.throws(()=>[...binaryMaskComponents(2,2,new Uint8Array(3))])
+  const controller=new AbortController();controller.abort()
+  assert.throws(()=>[...binaryMaskComponents(1,1,new Uint8Array(1),controller.signal)])
 })
