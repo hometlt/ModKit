@@ -114,7 +114,7 @@
         {
           "id": "modkit/ai",
           "path": "extensions/uncommon-documents/contributions/codec-ai.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "ai",
@@ -250,7 +250,7 @@
         {
           "id": "modkit/blend",
           "path": "extensions/uncommon-documents/contributions/codec-blend.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "blend",
@@ -414,7 +414,7 @@
         {
           "id": "modkit/cdr",
           "path": "extensions/uncommon-documents/contributions/codec-cdr.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "cdr",
@@ -707,7 +707,7 @@
         {
           "id": "modkit/docx",
           "path": "extensions/uncommon-documents/contributions/codec-docx.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "docx",
@@ -724,7 +724,7 @@
         {
           "id": "modkit/drawio",
           "path": "extensions/uncommon-documents/contributions/codec-drawio.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "drawio",
@@ -922,7 +922,7 @@
         {
           "id": "modkit/figma",
           "path": "extensions/uncommon-documents/contributions/codec-figma.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "figma",
@@ -939,7 +939,7 @@
         {
           "id": "modkit/fla",
           "path": "extensions/adobe-flash/contributions/codec-fla.json",
-          "repository": "other"
+          "repository": "flash"
         }
       ],
       "codec": "fla",
@@ -973,7 +973,7 @@
         {
           "id": "modkit/flv",
           "path": "extensions/adobe-flash/contributions/codec-flv.json",
-          "repository": "other"
+          "repository": "flash"
         }
       ],
       "codec": "flv",
@@ -1611,7 +1611,7 @@
         {
           "id": "modkit/pdf",
           "path": "extensions/uncommon-documents/contributions/codec-pdf.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "pdf",
@@ -1713,7 +1713,7 @@
         {
           "id": "modkit/pptx",
           "path": "extensions/uncommon-documents/contributions/codec-pptx.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "pptx",
@@ -1781,7 +1781,7 @@
         {
           "id": "modkit/psd",
           "path": "extensions/uncommon-documents/contributions/codec-psd.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "psd",
@@ -2509,7 +2509,7 @@
         {
           "id": "modkit/swf",
           "path": "extensions/adobe-flash/contributions/codec-swf.json",
-          "repository": "other"
+          "repository": "flash"
         }
       ],
       "codec": "swf",
@@ -2860,7 +2860,7 @@
         {
           "id": "modkit/visio",
           "path": "extensions/uncommon-documents/contributions/codec-visio.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "visio",
@@ -3283,7 +3283,7 @@
         {
           "id": "modkit/xlsx",
           "path": "extensions/uncommon-documents/contributions/codec-xlsx.json",
-          "repository": "other"
+          "repository": "documents"
         }
       ],
       "codec": "xlsx",
