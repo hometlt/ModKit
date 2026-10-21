@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 261,
+  "contributionCount": 264,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -75,7 +75,7 @@
         {
           "id": "modkit/age-bar",
           "path": "extensions/microsoft-age-series/contributions/codec-age-bar.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "age-bar",
@@ -346,7 +346,7 @@
         {
           "id": "modkit/bti",
           "path": "extensions/microsoft-age-series/contributions/codec-bti.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "bti",
@@ -516,7 +516,7 @@
         {
           "id": "modkit/cub",
           "path": "extensions/microsoft-age-series/contributions/codec-cub.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "cub",
@@ -584,7 +584,7 @@
         {
           "id": "modkit/ddt",
           "path": "extensions/microsoft-age-series/contributions/codec-ddt.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "ddt",
@@ -1126,7 +1126,7 @@
         {
           "id": "modkit/halo-era",
           "path": "extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "halo-era",
@@ -1453,7 +1453,7 @@
         {
           "id": "modkit/mtrl",
           "path": "extensions/microsoft-age-series/contributions/codec-mtrl.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "mtrl",
@@ -1736,7 +1736,7 @@
         {
           "id": "modkit/prt",
           "path": "extensions/microsoft-age-series/contributions/codec-prt.json",
-          "repository": "other"
+          "repository": "ensemble"
         }
       ],
       "codec": "prt",
@@ -2645,7 +2645,7 @@
         {
           "id": "modkit/uasset",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "uasset",
@@ -2747,7 +2747,7 @@
         {
           "id": "modkit/unreal-actorx",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-actorx.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-actorx",
@@ -2764,7 +2764,7 @@
         {
           "id": "modkit/unreal-iostore",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-iostore",
@@ -2781,7 +2781,7 @@
         {
           "id": "modkit/unreal-pak",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-pak",
@@ -2798,7 +2798,7 @@
         {
           "id": "modkit/unreal-uasset",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-uasset",
@@ -2815,7 +2815,7 @@
         {
           "id": "modkit/unreal-uasset-texture",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-uasset-texture",
@@ -2832,7 +2832,7 @@
         {
           "id": "modkit/unreal-uasset-video",
           "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
-          "repository": "other"
+          "repository": "unreal"
         }
       ],
       "codec": "unreal-uasset-video",
