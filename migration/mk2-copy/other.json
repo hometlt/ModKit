@@ -111,7 +111,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/index.ts",
       "sha256Mk2": "17253f97bb85b86120791e26272a1834a681d96ce72e3d3a433af494022c7940",
       "sha256Mk3": "0d5da3c0a9ad8b84479bceb722abda82246c0381e46d267194fecefc5560e1d3",
       "rewrites": [
@@ -120,28 +120,28 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
       "sha256Mk2": "82361119ddc18ab74de0fb306b368cd67439d7dd358d70fb1a7782031ed44b58",
       "sha256Mk3": "82361119ddc18ab74de0fb306b368cd67439d7dd358d70fb1a7782031ed44b58",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/test/manifest.spec.ts",
       "sha256Mk2": "c66fac82d206aad54e4e50adab13b8f5fb5d484c2e46c446816434ee3bd9f77c",
       "sha256Mk3": "c66fac82d206aad54e4e50adab13b8f5fb5d484c2e46c446816434ee3bd9f77c",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
       "sha256Mk2": "0f08a2b465bbcfd5e7edcfa4e3fef2cbdf75efeacf36f3d5a1e36b93f54e8672",
       "sha256Mk3": "0f08a2b465bbcfd5e7edcfa4e3fef2cbdf75efeacf36f3d5a1e36b93f54e8672",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/index.ts",
       "sha256Mk2": "6e553782cfe7837e11815bc40455183e8c5b476ac16b15a2382122d6a370ad86",
       "sha256Mk3": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
       "rewrites": [
@@ -150,7 +150,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/manifest.spec.ts",
       "sha256Mk2": "b4da44ae675e22d9a33604e54d006adc22ade462c5abd930e65393aea2fcc85d",
       "sha256Mk3": "fbf2ea4dbc4f6e2155b8efbec9c1135e63e2eac9aec539852d8f86c6773c1131",
       "rewrites": [
@@ -159,14 +159,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/test/unreal-actorx.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/unreal-actorx.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/unreal-actorx.spec.ts",
       "sha256Mk2": "b96b4abc2136decb5fcbb797dc821592ccb0d53f8a914d730955eafb4e421ea8",
       "sha256Mk3": "b96b4abc2136decb5fcbb797dc821592ccb0d53f8a914d730955eafb4e421ea8",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/detect.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/detect.ts",
       "sha256Mk2": "e2d69321d1f73f6d611f8497ca04010850586ab747987456c42c66a222050839",
       "sha256Mk3": "37962516833af790465cb8d15dad3fb8b79ce88f588f7cfa4296b2f886771d77",
       "rewrites": [
@@ -175,7 +175,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/index.ts",
       "sha256Mk2": "b42dbfdce9d63f8f8b7f7a3bfb15cf2114fbe5507f00bd46df3e40ac81903e1d",
       "sha256Mk3": "992447f50178ea35bdaaf7b6f21bd895e50fb57bbeda9894c4e5c716ab563a3c",
       "rewrites": [
@@ -184,28 +184,28 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
       "sha256Mk2": "aa95f64147c772fae3162b86e41963e8ba2ae40c8bb998dd06903adf15a58a2e",
       "sha256Mk3": "aa95f64147c772fae3162b86e41963e8ba2ae40c8bb998dd06903adf15a58a2e",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
       "sha256Mk2": "65028bc0148a5e8f5af8ad2b23bf5f07785157ed11633da2001745607d6f4990",
       "sha256Mk3": "65028bc0148a5e8f5af8ad2b23bf5f07785157ed11633da2001745607d6f4990",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/real.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/real.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/real.ts",
       "sha256Mk2": "c16a957320841f150504e80445cf3c7881847ee98c7a483e416005e435d8ae0d",
       "sha256Mk3": "c16a957320841f150504e80445cf3c7881847ee98c7a483e416005e435d8ae0d",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/iostore-real.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore-real.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore-real.spec.ts",
       "sha256Mk2": "861fc12d1af0187a920334ff32db051ba854f39bc2890937f94e9d47ea1d0b17",
       "sha256Mk3": "5a834bc755d68257fb36e79724f80ae5b9db13ff921ca95e723f377c949850f5",
       "rewrites": [
@@ -214,21 +214,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/iostore.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore.spec.ts",
       "sha256Mk2": "d416d400acbcd3f69431f1304078b4abbc9594363bea9317330b05090b52c0cd",
       "sha256Mk3": "d416d400acbcd3f69431f1304078b4abbc9594363bea9317330b05090b52c0cd",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/manifest.spec.ts",
       "sha256Mk2": "ee4d4a70c35ab2d491f0659c293a4dd1c32aa5042e2f1767517e8e42db18e33a",
       "sha256Mk3": "ee4d4a70c35ab2d491f0659c293a4dd1c32aa5042e2f1767517e8e42db18e33a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/oodle-native.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-native.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-native.spec.ts",
       "sha256Mk2": "2a7e21f9abcbc95a069fad5d0e7516856b92c52d8b98dd3f3b75a88fd39c71b5",
       "sha256Mk3": "c09385061b062bd593a0b4b5988876b7a4854d0d3172388a629a29bbdc5805f0",
       "rewrites": [
@@ -237,7 +237,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/oodle-wasm.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-wasm.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-wasm.spec.ts",
       "sha256Mk2": "6d24851f80f2aa40401fabdd34e0a6f19cfdf7f887460adef9896fd27300bbb8",
       "sha256Mk3": "e37b44778f313668628997685fc4d2158a9e52eb2f01f34871ea1e606958a926",
       "rewrites": [
@@ -246,7 +246,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/detect.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/detect.ts",
       "sha256Mk2": "507a771094619d30bb76a47b7ea698cc4a8b96c0af4a17c36268021d1695ecb3",
       "sha256Mk3": "6933eb673d5ac7c9fe4033d59467616fda2b6a3ce6cdf2ffc81c848494791a36",
       "rewrites": [
@@ -255,21 +255,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/index.ts",
       "sha256Mk2": "95f7179b75d6b1033a45f90655641cb05c0903730bec6eb11246aba06d03caec",
       "sha256Mk3": "95f7179b75d6b1033a45f90655641cb05c0903730bec6eb11246aba06d03caec",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/manifest.spec.ts",
       "sha256Mk2": "b6c696fcf3c4c75a801f9336ac481a1f96eb9a7372c0446d29ecb38c5c4d716f",
       "sha256Mk3": "b6c696fcf3c4c75a801f9336ac481a1f96eb9a7372c0446d29ecb38c5c4d716f",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/pak-source.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak-source.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak-source.spec.ts",
       "sha256Mk2": "4c2b3bce605494670b223a0df610ebc5c9e22740974b9f9bcce869b74238f36f",
       "sha256Mk3": "23f489dceb008d7d6183be5f98ade6c7381dbb0a95e5258134376f4966640d8d",
       "rewrites": [
@@ -278,14 +278,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/pak.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak.spec.ts",
       "sha256Mk2": "0df11f62f29412dc6a945e574264b20a87d76631230574cee65761eef2047c18",
       "sha256Mk3": "0df11f62f29412dc6a945e574264b20a87d76631230574cee65761eef2047c18",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
       "sha256Mk2": "2309833799b1f95d93067fdf1584f552b62ad67e248d59d631209a4049cc4d0f",
       "sha256Mk3": "e011ccf172f474f52698c910c3e18b0f31f0d695dfe09738fef938821dc54ad2",
       "rewrites": [
@@ -294,7 +294,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
       "sha256Mk2": "1c905ecfa299dd1f28f64125a9ff3834b06a23da04b5b603c90f1e6bd4b9aa59",
       "sha256Mk3": "6dd6ae38563b37c8e84fc51958d42807f426db92bb8fd98df9198523028d0a39",
       "rewrites": [
@@ -303,21 +303,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/test/manifest.spec.ts",
       "sha256Mk2": "9b4f1477116af23c460a3e26c066e8f923c475b372b831046c75ff6c8ad95e96",
       "sha256Mk3": "9b4f1477116af23c460a3e26c066e8f923c475b372b831046c75ff6c8ad95e96",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
       "sha256Mk2": "133052e1c0d63d7bd360578b86df560fffc42b46184e1434c888c24d013adfb4",
       "sha256Mk3": "133052e1c0d63d7bd360578b86df560fffc42b46184e1434c888c24d013adfb4",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
       "sha256Mk2": "8210a7f3a7a12c1788a5327bc00e1f3d0922703c7b47e34ad99e2fad82a81550",
       "sha256Mk3": "152ad783905ac32b3485d752db8ccfca1ff8d5702aea95e78c88fd6c0094bea7",
       "rewrites": [
@@ -326,28 +326,28 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
       "sha256Mk2": "0bfbca02c458b550ddc2e86a0f083130f070af602a7efdb8b9f0d81261a64db0",
       "sha256Mk3": "0bfbca02c458b550ddc2e86a0f083130f070af602a7efdb8b9f0d81261a64db0",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/test/media-references.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/test/media-references.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/test/media-references.spec.ts",
       "sha256Mk2": "b10de80069e290ef09e2e3b33def0371bc65c9543d581820ac50751e24114acc",
       "sha256Mk3": "b10de80069e290ef09e2e3b33def0371bc65c9543d581820ac50751e24114acc",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
       "sha256Mk2": "c8adb63eb83db80cf77a3eb041d9fa556eac00fb8c0e6cd4dba426d9a0d0806a",
       "sha256Mk3": "c8adb63eb83db80cf77a3eb041d9fa556eac00fb8c0e6cd4dba426d9a0d0806a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/index.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/index.ts",
       "sha256Mk2": "c4ff41c9c33b4ecf214b0007525f336df2107f94771dae8773f127531169a8ce",
       "sha256Mk3": "647094308094f6a10c3c95b96b779b8857fa39107090e7cd87e566d96a8d63d4",
       "rewrites": [
@@ -356,7 +356,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/manifest.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/manifest.spec.ts",
       "sha256Mk2": "978a5e1e96ae405015b3fda47459ef4f36f726e97ae4f01282a430c30e9a0be0",
       "sha256Mk3": "672dcdacbdc2059519c07f4995dc3b87c092bcebb7ccc0f69252ee385b031c51",
       "rewrites": [
@@ -365,42 +365,42 @@
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/test/unreal-uasset.spec.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/unreal-uasset.spec.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/unreal-uasset.spec.ts",
       "sha256Mk2": "48edddee55f0f45cc35b91f50f35f8e0b01fddc6ba028e4ca96286e2b1f8397c",
       "sha256Mk3": "48edddee55f0f45cc35b91f50f35f8e0b01fddc6ba028e4ca96286e2b1f8397c",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-animation.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-animation.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-animation.ts",
       "sha256Mk2": "2466f9aa43fe8f205e8bb47e99d862732e4cdaecd3199858bb8323f84dd81da9",
       "sha256Mk3": "2466f9aa43fe8f205e8bb47e99d862732e4cdaecd3199858bb8323f84dd81da9",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-properties.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-properties.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-properties.ts",
       "sha256Mk2": "7c65d0aeb2dd8a7566b4af04f9dea2416ae6915529486eba168407a00c8f090e",
       "sha256Mk3": "7c65d0aeb2dd8a7566b4af04f9dea2416ae6915529486eba168407a00c8f090e",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
       "sha256Mk2": "ca5eb7d52e5619bd46c826fbf47a7b22f146772ff07f5a44bb45843da8d50a4e",
       "sha256Mk3": "ca5eb7d52e5619bd46c826fbf47a7b22f146772ff07f5a44bb45843da8d50a4e",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-static-mesh.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-static-mesh.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-static-mesh.ts",
       "sha256Mk2": "613825df14c518a311ef1efd7db7fcee6e1e9a7eff9aaf44aac0331de3884410",
       "sha256Mk3": "613825df14c518a311ef1efd7db7fcee6e1e9a7eff9aaf44aac0331de3884410",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/unreal.ts",
-      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/unreal.ts",
+      "destination": "modkit-extensions-unreal/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/unreal.ts",
       "sha256Mk2": "f40217d53490118c8a035f00b9541f21a38e8ecd36b8c5d49d129f34e1b08285",
       "sha256Mk3": "198c673a368c03115340632d293c8d4e59f264e9e3e7e75ff362e122dc1d059d",
       "rewrites": [

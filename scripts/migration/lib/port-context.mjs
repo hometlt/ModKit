@@ -29,7 +29,7 @@ export async function portContext({ discoverRepositories = false } = {}) {
       { id: 'core', directory: coreRoot, workspaceRelativeRoot: path.basename(coreRoot) },
       ...[
         'blizzard', 'warzone', 'ea', 'spring', 'other', 'realitypump',
-        'petroglyph', 'relic', 'gas-powered', 'unity', 'ensemble',
+        'petroglyph', 'relic', 'gas-powered', 'unity', 'ensemble', 'unreal',
       ].map(id => {
         const descriptor = externalRepositoryDescriptor(id, workspaceRoot)
         return {
