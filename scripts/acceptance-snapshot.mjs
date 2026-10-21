@@ -43,6 +43,9 @@ const REPOSITORIES = [
   'modkit-extensions-other',
   'modkit-extensions-ensemble',
   'modkit-extensions-unreal',
+  'modkit-extensions-facefx',
+  'modkit-extensions-wwise',
+  'modkit-extensions-fmod',
   'modkit-extensions-petroglyph',
   'modkit-extensions-relic',
   'modkit-extensions-gas-powered',
@@ -52,7 +55,7 @@ const REPOSITORIES = [
   'modkit-extensions-minecraft',
   'modkit-extensions-dune2000',
   'multiverse',
-  // Optional GPL Oodle decoder (rad/oodle): no lockfile, so no install; its build runs the core's tsc.
+  // Optional RAD repository: GPL Oodle provider and independent MIT video codecs.
   'modkit-extensions-rad',
   // Optional Luau VM (question 56): no lockfile yet, so no install; its build is a stub for now.
   'modkit-extensions-luau',

@@ -710,14 +710,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/detect.ts",
+      "destination": "modkit-extensions-rad/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/detect.ts",
       "sha256Mk2": "95a997b135f9ff769158979321738b40d712f6c67ad3c7e56ce97b09a0c19b6f",
       "sha256Mk3": "95a997b135f9ff769158979321738b40d712f6c67ad3c7e56ce97b09a0c19b6f",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/index.ts",
+      "destination": "modkit-extensions-rad/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/index.ts",
       "sha256Mk2": "5b4795d5e2ab4f997a6f64566a716106a4887ef30fc0aa6da23a2f7b33bc8e16",
       "sha256Mk3": "58fb3cad836f7641c0f8e36ac3e11aeea4d5c0a424a6b061bbf3b83fb1433393",
       "rewrites": [
@@ -726,21 +726,21 @@
     },
     {
       "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/test/manifests.spec.ts",
-      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/test/manifests.spec.ts",
+      "destination": "modkit-extensions-rad/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/test/manifests.spec.ts",
       "sha256Mk2": "dced04eeb0b4f37cc62a3ad12ab3db531e38c99b3f3ea21566ffffe6713ad2a4",
       "sha256Mk3": "dced04eeb0b4f37cc62a3ad12ab3db531e38c99b3f3ea21566ffffe6713ad2a4",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/smacker/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/detect.ts",
+      "destination": "modkit-extensions-rad/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/detect.ts",
       "sha256Mk2": "c3250d416400273941af1aaa3b60e9b52b14e570fe1df3c7aac2f2eb9bf683d0",
       "sha256Mk3": "c3250d416400273941af1aaa3b60e9b52b14e570fe1df3c7aac2f2eb9bf683d0",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/smacker/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/index.ts",
+      "destination": "modkit-extensions-rad/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/index.ts",
       "sha256Mk2": "6fee706cb594b4e6f742c466b22588443ea3dfb707ac3b8f9bbcd50f817f20dd",
       "sha256Mk3": "8eb94d9a0d478aacc35b9b04021a023283545eb5f81064833e39fe4db21964de",
       "rewrites": [

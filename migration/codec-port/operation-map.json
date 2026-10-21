@@ -246,7 +246,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
       "status": "adapted",
@@ -257,14 +257,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-bnk.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
       "status": "adapted",
@@ -846,7 +846,7 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "contribution": "modkit-extensions-fmod/extensions/firelight-fmod/contributions/codec-fsb.json",
       "handlerId": null,
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
       "status": "adapted",
@@ -857,14 +857,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "contribution": "modkit-extensions-fmod/extensions/firelight-fmod/contributions/codec-fsb.json",
       "handlerId": "convert-audio",
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
       "status": "adapted",
       "targetOperation": "export.convert"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/firelight-fmod/contributions/codec-fsb.json",
+      "contribution": "modkit-extensions-fmod/extensions/firelight-fmod/contributions/codec-fsb.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
       "status": "adapted",
@@ -3251,14 +3251,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-wem.json",
       "handlerId": "convert-audio",
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.export",
       "status": "adapted",
       "targetOperation": "export.convert"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wem.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-wem.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wem/operation/audio.inspect",
       "status": "adapted",
@@ -3337,14 +3337,14 @@
       }
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+      "contribution": "modkit-extensions-wwise/extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
       "status": "adapted",
