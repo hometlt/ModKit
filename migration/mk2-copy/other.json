@@ -486,7 +486,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/src/index.ts",
       "sha256Mk2": "63569b0bfea2320aab3fe938f5952d239abe463122719b49c84d3c457af9ab40",
       "sha256Mk3": "3f91d86fe2e8960eefcbce116a0c1475fa024fd64becd05f487ba33e87e226f2",
       "rewrites": [
@@ -495,7 +495,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/archive.spec.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/archive.spec.ts",
       "sha256Mk2": "bd0177ba07eb475e58a6512d3e4185038c93766002f373c32c578b6a295fdcc3",
       "sha256Mk3": "07624002742fa23297e9164beb11a4793f5164be89be016b3a82b056108fefa3",
       "rewrites": [
@@ -504,7 +504,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/fixture-bytes.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/fixture-bytes.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/fixture-bytes.ts",
       "sha256Mk2": "939ebc735bd6094fa6d978172ee2d268f6307d3d6769b36420c5a2e66c5bb2c6",
       "sha256Mk3": "b7a7a70235e621ea5a2c1516b6db921b667c53ad11c9bbf3de49f17ebc99cc02",
       "rewrites": [
@@ -513,7 +513,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/manifest.spec.ts",
       "sha256Mk2": "851d58625c86f11a3ea9d9b9810f2ef25f536d9f8096ee54606d35d33a3cd5bb",
       "sha256Mk3": "e20171e779717641f4439f3830c7d9b461d9dddb0d22c12479550e4fbda80c8a",
       "rewrites": [
@@ -522,7 +522,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/named-record-fixture.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/named-record-fixture.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/named-record-fixture.ts",
       "sha256Mk2": "6d1aa1843b02347fda54d683c44075b38138675849c7b8e1ccf7c1e79597ac40",
       "sha256Mk3": "3dae5b21209152713a9c0a88fec4676ec04faf17e7adcfba6511a45110c5a86b",
       "rewrites": [
@@ -531,14 +531,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
       "sha256Mk2": "667bee1cae4d2ae1370b64c10a76b6ba81fb81d56b6d415ee96c65a47012503a",
       "sha256Mk3": "667bee1cae4d2ae1370b64c10a76b6ba81fb81d56b6d415ee96c65a47012503a",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/bti/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/bti/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/bti/src/index.ts",
       "sha256Mk2": "1f686e56f55733e3bffed7a6ad3fa6262027905e29a712ed386e2d00011ec951",
       "sha256Mk3": "15f8218cd31c6f9b6a83b4c47016865261944f9d87fd9f569cedd401914dc6af",
       "rewrites": [
@@ -547,7 +547,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/cub/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/cub/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/cub/src/index.ts",
       "sha256Mk2": "bc7c6ad1a389e886756f686a6130b635d256da36f6d807839285f14b8537029d",
       "sha256Mk3": "7bcebeb4811843f879bf6073f981dc561cb63cb77606a2898f02896f997f6598",
       "rewrites": [
@@ -556,7 +556,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/ddt/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/ddt/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/ddt/src/index.ts",
       "sha256Mk2": "b54e0d1cac76b89032f6b4401814b7b107c04309dc86dc955d280bb9684d03c2",
       "sha256Mk3": "22f85d5ecdc16194bf5dd9f56f96064fb5125e31ab07f9cae533fd95c648d364",
       "rewrites": [
@@ -565,7 +565,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/mtrl/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/mtrl/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/mtrl/src/index.ts",
       "sha256Mk2": "7193af78968312308d6cc107818978b10b904a31e0eb74d5e8bdefee68b9699c",
       "sha256Mk3": "c0071379a966df43b36dda2864ae954cb2fad133d251c27417251b74a5f3969c",
       "rewrites": [
@@ -574,7 +574,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/prt/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/prt/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/prt/src/index.ts",
       "sha256Mk2": "92fc684337e35596fedf4fda7787119ff1c7add031b062365b21b13139697b6f",
       "sha256Mk3": "edc1390d17eb5aa7a15ceac6e58a156716ead4bad1e2fee11b4d6abc6caa3a25",
       "rewrites": [
@@ -583,7 +583,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/src/detect.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/detect.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/detect.ts",
       "sha256Mk2": "dddb6980979acc72d2273a7758eea37d899e73e208e7b192c3b23ab2a27baf12",
       "sha256Mk3": "83eadd71e6a9e73da67deb97fd694be839cd3bf5b324086d3585315e9ae48e3e",
       "rewrites": [
@@ -592,7 +592,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/src/index.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/index.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/index.ts",
       "sha256Mk2": "22654f444bd2cd28302fc61cf170cbc85353555ddd1b277fbd2924268a76ff2c",
       "sha256Mk3": "a57da5c5a459aa96653b0ef7b012d11af2352577f29257128b4d7fe1f9a5c828",
       "rewrites": [
@@ -601,7 +601,7 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/test/archive.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/archive.spec.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/archive.spec.ts",
       "sha256Mk2": "c5b4c8b53de26bf16f92eaa8577bba8bd7f435b8b1c8fa43fd2d8b8d449cbbd2",
       "sha256Mk3": "6f8b5d34ecd89185999c02b357f2d5ff450bc97c9c043135ce0790aec66e849e",
       "rewrites": [
@@ -610,14 +610,14 @@
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/test/manifest.spec.ts",
-      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/manifest.spec.ts",
       "sha256Mk2": "85461bff94535309d73f6b8514654429384573038baaaf853b6b4a92476f3970",
       "sha256Mk3": "85461bff94535309d73f6b8514654429384573038baaaf853b6b4a92476f3970",
       "rewrites": []
     },
     {
       "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
-      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
+      "destination": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
       "sha256Mk2": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
       "sha256Mk3": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
       "rewrites": []

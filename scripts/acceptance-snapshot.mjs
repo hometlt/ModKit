@@ -41,6 +41,7 @@ const REPOSITORIES = [
   'modkit-extensions-ea',
   'modkit-extensions-annihilation',
   'modkit-extensions-other',
+  'modkit-extensions-ensemble',
   'modkit-extensions-petroglyph',
   'modkit-extensions-relic',
   'modkit-extensions-gas-powered',

@@ -36,14 +36,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-bar.json",
+      "contribution": "modkit-extensions-ensemble/extensions/microsoft-age-series/contributions/codec-age-bar.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/microsoft-age-series/contributions/codec-age-bar.json",
+      "contribution": "modkit-extensions-ensemble/extensions/microsoft-age-series/contributions/codec-age-bar.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.inspect",
       "status": "adapted",
@@ -1015,14 +1015,14 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "contribution": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-other/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+      "contribution": "modkit-extensions-ensemble/extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
       "status": "adapted",
