@@ -15,6 +15,9 @@ behavior → runtime/source support → public-route evidence → limitation. Do
 file extensions with a complete game extension.
 
 Create `modkit-extensions-<domain>` only if no existing repository owns the game or technology.
+In the full workspace, scaffold it (or an additional game root, or an inspection codec stub) with
+`skills/create-modkit-extension-repository` (its modkit-dev MCP tools or `scripts/scaffold.mjs`)
+instead of copying another repository by hand; it keeps vendor provenance and test wiring current.
 Several games may share a publisher/engine repository. Preserve separate game and extension IDs;
 keep common engine/middleware codecs as dependency packages, with one implementation per format.
 Wwise/FMOD resources reuse their middleware extensions. Installation/package semantics stay at the
