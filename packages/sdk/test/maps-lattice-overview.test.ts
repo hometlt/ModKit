@@ -19,7 +19,7 @@ const fixture=()=>({provenance:{method:'fixture',quality:'authored',complete:tru
   elevation:[[[2,0],[1,10]],[[1,2],[2,4]]],palette:[{value:0,color:[0,0,0]},{value:10,color:[255,255,255]}],
 },lines:[{role:'cliff',points:[[10,20],[12,17]],closed:false}],markers:[{
   id:'resource',role:'resource',point:[11,19],outline:[[10,20],[12,20],[12,17]],color:[0,255,0],opacity:1,
-  resourceKind:'fixture-resource',resourceVariant:'rich',resourceState:'reduced',
+  resourceKind:'fixture-resource',resourceVariant:'rich',resourceState:'reduced',resourceAmount:900,
 }],playableArea:[[10,20],[16,20],[16,14]]})
 
 test('semantic overview keeps unknown masks, scoped rich resource data and immutable copied geometry',()=>{
@@ -53,6 +53,7 @@ test('malformed rows, masks, palettes, frames, duplicates and unknown fields are
   v=>{v.raster.rowStep=[4,0]},v=>{v.markers.push(v.markers[0])},
   v=>{v.raster.blocked=[[[3,0]],[[3,0]]]},v=>{v.raster.movementProfile='ground';v.raster.blocked=[[[3,2]],[[3,0]]]},
   v=>{v.markers[0].resourceVariant='guessed'},v=>{v.markers[0].opacity=2},
+  v=>{v.markers[0].resourceAmount=-1},v=>{v.markers[0].resourceAmount=1.5},
  ]){const v=fixture();mutate(v);assert.throws(()=>validateLatticeOverview(v))}
 })
 

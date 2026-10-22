@@ -79,6 +79,8 @@ export interface MapLatticeOverview {
     resourceKind?: string
     resourceVariant?: 'ordinary' | 'rich'
     resourceState?: 'full' | 'reduced' | 'depleted'
+    /** Native amount the resource holds as placed (nonnegative integer in the game's own units). */
+    resourceAmount?: number
     player?: number
   }>[]
   /** Missing means no known playable boundary. An empty polygon is invalid. */
@@ -267,6 +269,7 @@ export function validateLatticeOverview(
         'resourceKind',
         'resourceVariant',
         'resourceState',
+        'resourceAmount',
         'player',
       ])
       const id = text(m['id'])
@@ -288,6 +291,11 @@ export function validateLatticeOverview(
         !['full', 'reduced', 'depleted'].includes(String(m['resourceState']))
       )
         throw new TypeError('Invalid resource state')
+      if (
+        m['resourceAmount'] !== undefined &&
+        (!Number.isSafeInteger(m['resourceAmount']) || (m['resourceAmount'] as number) < 0)
+      )
+        throw new TypeError('Invalid resource amount')
       if (m['player'] !== undefined && !Number.isSafeInteger(m['player']))
         throw new TypeError('Invalid lattice player')
       return Object.freeze({
@@ -304,6 +312,7 @@ export function validateLatticeOverview(
         ...(m['resourceState'] === undefined
           ? {}
           : { resourceState: m['resourceState'] as 'full' | 'reduced' | 'depleted' }),
+        ...(m['resourceAmount'] === undefined ? {} : { resourceAmount: m['resourceAmount'] as number }),
         ...(m['player'] === undefined ? {} : { player: m['player'] as number }),
       })
     }),
