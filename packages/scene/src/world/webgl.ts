@@ -983,7 +983,7 @@ export function worldModelEffectDraws(
         const simulated = effect.source.frame(time, effect.materials, localView, effectPass)
         // a simple-pass emitter draws with the common program, as the transparent pass draws only programs
         const converted = new Set(
-          simulated.materials.filter(m => m.simpleEffect !== undefined && m.shader === undefined).map(m => m.id),
+          simulated.materials.filter(m => m.simpleEffect !== undefined && !drawsProgram(m.shader)).map(m => m.id),
         )
         const frame = {
           ...simulated,
@@ -1105,7 +1105,7 @@ const SIMPLE_EFFECT_BLEND_MODES: Readonly<Record<string, number>> = Object.freez
  */
 function effectProgramMaterial(material: SceneRendererMaterial): SceneRendererMaterial {
   const effect = material.simpleEffect
-  if (effect === undefined || material.shader !== undefined) return material
+  if (effect === undefined || drawsProgram(material.shader)) return material
   const kept = effectProgramMaterials.get(material)
   if (kept !== undefined) return kept
   // added light: the texture's colour without its alpha; else coverage by alpha (as decal programs)
@@ -3005,6 +3005,39 @@ function worldUvSetPrimitive<P extends SceneRendererPrimitive>(
 
 const GLTF_METALLIC_ROUGHNESS_SLOTS = new Set(['metallicroughness'])
 
+/** A material shader the program route draws: the common render material with its own program. */
+function drawsProgram(shader: SceneRendererMaterial['shader']): boolean {
+  if (shader?.id !== RENDER_MATERIAL_SHADER) return false
+  const model = (shader.parameters as { renderModel?: { standard?: unknown; composite?: unknown } }).renderModel
+  return model?.standard !== undefined || model?.composite !== undefined
+}
+
+/**
+ * The blend equation a model material's native blend states, for the equations its coverage cannot
+ * say, as the UVM route reads them (uvmMaterialBlendEffect): a game shader without a program of its
+ * own (Kane's Wrath's `sage/particle-system`) draws its additive sprites as a simple effect, which
+ * the effect pass converts (effectProgramMaterial); without it they drew alpha-blended, as black
+ * cards where the sprite fades to black.
+ */
+function worldMaterialBlendEffect(ref: ModelMaterialRef): SceneRendererMaterial['simpleEffect'] {
+  const blend =
+    ref.blendMode === 'additive'
+      ? 'additive-one-one'
+      : ref.blendMode === 'add-alpha' || ref.blendMode === 'modulate' || ref.blendMode === 'modulate2x'
+        ? ref.blendMode
+        : undefined
+  if (blend === undefined || drawsProgram(ref.shader)) return undefined
+  return Object.freeze({
+    blend,
+    depthTest: true,
+    depthWrite: ref.depthWrite === true,
+    doubleSided: ref.doubleSided === true,
+    alphaCutoff: 0,
+    wrapU: 'repeat' as const,
+    wrapV: 'repeat' as const,
+  })
+}
+
 function worldModelSceneMaterials(
   refs: readonly ModelMaterialRef[],
   textures: readonly SceneRendererTexture[],
@@ -3051,6 +3084,7 @@ function worldModelSceneMaterials(
         used.set(texture.id, texture)
         bindings.push({ resourceId, textureId: texture.id })
       }
+    const simpleEffect = worldMaterialBlendEffect(ref)
     return Object.freeze({
       id: ref.id,
       baseColor: baseTexture === undefined ? colorHash(ref.id) : ([0.78, 0.8, 0.84, 1] as const),
@@ -3060,6 +3094,7 @@ function worldModelSceneMaterials(
       ...(ref.alphaCutoff === undefined ? {} : { alphaCutoff: ref.alphaCutoff }),
       ...(ref.shader === undefined ? {} : { shader: ref.shader }),
       ...(bindings.length === 0 ? {} : { textureBindings: Object.freeze(bindings) }),
+      ...(simpleEffect === undefined ? {} : { simpleEffect }),
     })
   })
   return Object.freeze({

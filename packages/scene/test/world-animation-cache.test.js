@@ -561,6 +561,18 @@ it('retains terrain while sequence-only material programs, live effects and proj
   assert.equal(values(next), values(createWorldWebGlPlan(nextInput)))
 })
 
+it('draws an additive particle of a game shader without a program as a simple additive effect', () => {
+  const model = effectModel({ particles: true })
+  // Kane's Wrath's particle systems: a native shader name, no program, an additive blend
+  const additive = { id: 'material-0', alphaMode: 'blend', blendMode: 'additive', depthWrite: false,
+    layers: [{ slot: 'diffuse', resourceId: 'effect.png', uvSource: 0 }],
+    shader: { id: 'sage/particle-system', parameters: {} } }
+  const plan = createWorldWebGlPlan({ ...world(), models: new Map([['actor', { ...model, materials: [additive] }]]) })
+  const material = plan.modelEffects[0].materials.find((m) => m.id === 'material-0')
+  assert.equal(material.simpleEffect?.blend, 'additive-one-one')
+  assert.equal(material.shader?.id, 'sage/particle-system')
+})
+
 it('decides once for copies kept at one moment, apart from a copy with a time of its own', () => {
   const copy = (objectId, x) => ({
     ...actor,
