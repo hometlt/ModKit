@@ -100,6 +100,14 @@ export function createVoxelBindingSurface(
       const points = indices.map(index => new Vector3().fromArray(mesh.positions, index * 3))
       const triangle = new Triangle(points[0]!, points[1]!, points[2]!),
         box = new Box3().setFromPoints(points)
+      const edgeSquared = Math.max(
+        triangle.a.distanceToSquared(triangle.b),
+        triangle.b.distanceToSquared(triangle.c),
+        triangle.c.distanceToSquared(triangle.a),
+      )
+      // Gram-matrix cancellation makes barycentric votes unreliable on nearly collinear faces.
+      // Use Three's area/segments and the existing explicit degenerate-policy path, never clamp votes.
+      const illConditioned = (2 * triangle.getArea()) ** 2 <= 64 * Number.EPSILON * edgeSquared ** 2
       let edges: readonly Line3[] | undefined
       result.push({
         vertices: indices,
@@ -114,10 +122,17 @@ export function createVoxelBindingSurface(
         closestDistance(p, out) {
           point.set(...p)
           triangle.closestPointToPoint(point, closest)
-          const degenerate = triangle.getBarycoord(closest, bary) === null
+          let degenerate = illConditioned || triangle.getBarycoord(closest, bary) === null
+          // A finite Three result may still be outside the barycentric simplex through cancellation.
+          // Such a query cannot supply skin weights; report degeneracy through the existing policy.
+          const total = bary.x + bary.y + bary.z
+          const unstable = illConditioned || !Number.isFinite(total)
+            || Math.abs(total - 1) > 1e-6
+            || Math.min(bary.x, bary.y, bary.z) < -1e-6 || Math.max(bary.x, bary.y, bary.z) > 1 + 1e-6
+          if (unstable) { degenerate = true; bary.set(0, 0, 0) }
           // Three's triangle query can divide by zero on a collapsed edge. Its segment query
           // covers that unsupported case without changing finite queries from the accepted corpus.
-          if (degenerate && !Number.isFinite(closest.distanceTo(point))) {
+          if (degenerate && (unstable || !Number.isFinite(closest.distanceTo(point)))) {
             edges ??= [
               new Line3(triangle.a, triangle.b),
               new Line3(triangle.b, triangle.c),

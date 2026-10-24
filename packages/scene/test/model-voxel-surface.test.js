@@ -51,6 +51,16 @@ test('collapsed edges use Three segment queries and keep degenerate barycentric 
   }
 })
 
+test('numerically collinear faces report degeneracy instead of unstable barycentric votes', () => {
+  const surface = createVoxelBindingSurface([mesh({
+    positions: new Float64Array([0, 0, 0, 1, 0, 0, 0.5, 1e-7, 0]),
+  })])
+  const bary = new Float64Array(3)
+  const distance = surface[0].closestDistance([0.5, 1, 1], bary)
+  assert.deepEqual([...bary], [0, 0, 0], 'caller must explicitly choose a degenerate-surface policy')
+  assert(Math.abs(distance - Math.hypot(1 - 1e-7, 1)) < 1e-12)
+})
+
 test('surface budgets and malformed geometry fail before unsafe reads or allocations', () => {
   for (const options of [
     { maxMeshes: 0 },
