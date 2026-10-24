@@ -172,6 +172,8 @@ export function createUvmEffectSource(
         binary,
         time,
         ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
+        // a world plays its clip in a loop: the clip's emitters start again every pass
+        ...(clip?.durationSeconds === undefined ? {} : { loopSeconds: clip.durationSeconds }),
         materials,
         activeNodes,
         maxBytes: MAX_BYTES,

@@ -83,6 +83,7 @@ import {
   quaternionFromRotationMatrix,
 } from '../model/billboard-math.js'
 import { createUvmEffectSource, type UvmEffectSource } from '../uvm/effect-source.js'
+import { uvmMaterialResources } from '../uvm/materials.js'
 import { TERRAIN_RECEIVER_ID } from '../uvm/projectors.js'
 import {
   createUvmProjectorFrameCache,
@@ -96,7 +97,7 @@ import {
   type MaterialSceneLight,
   type MaterialSequenceDraw,
 } from '../render/material-webgl.js'
-import type { StandardMaterialProgram } from '../materials/index.js'
+import { RENDER_MATERIAL_SHADER, type StandardMaterialProgram } from '../materials/index.js'
 import { primitiveTint, primitiveVertexTints } from '../render/tint.js'
 import { mergeMaterialDraws, primitiveVertexPlacements } from '../render/vertex-placements.js'
 import {
@@ -979,7 +980,21 @@ export function worldModelEffectDraws(
       if (cached !== undefined) frames.current.set(key, cached)
       else {
         // The pass: copies at other random start phases step simulations of their own.
-        const frame = effect.source.frame(time, effect.materials, localView, effectPass)
+        const simulated = effect.source.frame(time, effect.materials, localView, effectPass)
+        // a simple-pass emitter draws with the common program, as the transparent pass draws only programs
+        const converted = new Set(
+          simulated.materials.filter(m => m.simpleEffect !== undefined && m.shader === undefined).map(m => m.id),
+        )
+        const frame = {
+          ...simulated,
+          materials: simulated.materials.map(effectProgramMaterial),
+          // its sprites' colours become their per-vertex tint, as a program emitter's sprites carry them
+          primitives: simulated.primitives.map(primitive => {
+            if (primitive.materialId === undefined || !converted.has(primitive.materialId) || primitive.colors === undefined) return primitive
+            const { colors, ...rest } = primitive
+            return { ...rest, vertexTints: Float32Array.from(colors) }
+          }),
+        }
         // Stable program objects keep the GPU leases across frames that reuse this entry.
         const programs = effectMaterialPrograms(frame.materials, effect.textures, {
           ...effect.context,
@@ -1071,6 +1086,74 @@ function effectProgramMoment(context: SceneMaterialContext, followsTime: boolean
     context.sceneLighting,
     context.terrainTiling?.join(','),
   ].join('|')
+}
+
+/** Program materials of simple-pass effect materials, one per material object (see emitterMaterial). */
+const effectProgramMaterials = new WeakMap<SceneRendererMaterial, SceneRendererMaterial>()
+const SIMPLE_EFFECT_BLEND_MODES: Readonly<Record<string, number>> = Object.freeze({
+  opaque: 0, 'alpha-test': 0, blend: 1, additive: 2, 'additive-one-one': 2, 'add-alpha': 3,
+  modulate: 4, modulate2x: 5, premultiplied: 6,
+})
+
+/**
+ * A simple-pass effect material (one texture times the sprite's colour, a blend equation:
+ * render/simple-effect.ts) as the common program, unshaded: the world's transparent pass draws
+ * programs only, so a dust or smoke emitter of a plain particle material was dropped there while the
+ * model renderer drew it. A material with a program of its own is returned as it is.
+ * ponytail: the legacy `additive` (SRC_COLOR, ONE) squares the texel but not the sprite's vertex
+ * colour, and the emitter's screen-space UV is not carried; add them when a world needs them.
+ */
+function effectProgramMaterial(material: SceneRendererMaterial): SceneRendererMaterial {
+  const effect = material.simpleEffect
+  if (effect === undefined || material.shader !== undefined) return material
+  const kept = effectProgramMaterials.get(material)
+  if (kept !== undefined) return kept
+  // added light: the texture's colour without its alpha; else coverage by alpha (as decal programs)
+  const added = effect.blend === 'additive' || effect.blend === 'additive-one-one'
+  const layer = {
+    slot: 'diffuse',
+    uvSource: 0,
+    teamColorMode: 0,
+    invert: false,
+    clampResult: false,
+    wrapX: effect.wrapU === 'repeat',
+    wrapY: effect.wrapV === 'repeat',
+    // channels 0 RGB, 1 RGBA; op 2 adds weighted by alpha, 6 adds the colour
+    channels: added ? 0 : 1,
+    op: added ? 2 : 6,
+    ...(effect.textureResource === undefined
+      ? { texturePath: null, constantColor: { value: [1, 1, 1, 1] } }
+      : { texturePath: effect.textureResource }),
+  }
+  // the legacy `additive` adds the colour times itself (SRC_COLOR, ONE): the texture multiplies again
+  const squared = effect.blend === 'additive' && effect.textureResource !== undefined
+  const standard = {
+    layers: squared ? { diffuse: layer, decal: { ...layer, slot: 'decal', op: 0 } } : { diffuse: layer },
+    blendMode: SIMPLE_EFFECT_BLEND_MODES[effect.blend] ?? 1,
+    priority: material.priority ?? 0,
+    specularity: 1,
+    specMult: 0,
+    emisMult: 1,
+    specMode: 0,
+    alphaTestThreshold: effect.blend === 'alpha-test' ? effect.alphaCutoff : 0,
+    twoSided: effect.doubleSided,
+    unshaded: true,
+    doubleLambert: false,
+    clampOutput: false,
+    // the sprite colour and alpha arrive as its tint (vertexTints), not as vertex colours
+    usesVertexColor: false,
+    usesVertexAlpha: false,
+  }
+  const { simpleEffect: _simple, ...plain } = material
+  const program: SceneRendererMaterial = Object.freeze({
+    ...plain,
+    shader: Object.freeze({
+      id: RENDER_MATERIAL_SHADER,
+      parameters: Object.freeze({ renderModel: { version: 1, standard } }),
+    }),
+  })
+  effectProgramMaterials.set(material, program)
+  return program
 }
 
 /** The programs of an effect frame's materials at one moment, as prepareSceneMaterialPrograms. */
@@ -2957,6 +3040,17 @@ function worldModelSceneMaterials(
       used.set(texture.id, texture)
       bindings.push({ resourceId: layer.resourceId, textureId: texture.id })
     }
+    // A material program may sample textures its layer list does not name (a swarm's reflection
+    // map): the same resources the UVM path acquires (uvmMaterialResources) are bound here too,
+    // else the program's material is skipped as unresolved.
+    if (ref.shader !== undefined)
+      for (const resourceId of uvmMaterialResources([{ id: ref.id, shader: ref.shader } as SceneRendererMaterial], 1 << 26).get(ref.id) ?? []) {
+        const texture = byId.get(resourceId)
+        if (texture === undefined || bound.has(resourceId)) continue
+        bound.add(resourceId)
+        used.set(texture.id, texture)
+        bindings.push({ resourceId, textureId: texture.id })
+      }
     return Object.freeze({
       id: ref.id,
       baseColor: baseTexture === undefined ? colorHash(ref.id) : ([0.78, 0.8, 0.84, 1] as const),

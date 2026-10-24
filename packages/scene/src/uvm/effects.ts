@@ -51,6 +51,12 @@ export interface UvmEffectFrameOptions {
   readonly binary?: Uint8Array
   readonly time: number
   readonly sequenceIndex?: number
+  /**
+   * The looping clip's length: the emitters' sequence tracks read the time within the clip, so an
+   * emitter its clip starts (a shot's flash, a footstep's dust) starts again every loop. Absent: one
+   * pass of the clip, its tracks held past the end.
+   */
+  readonly loopSeconds?: number
   readonly viewMatrix?: Float32Array
   readonly materials: readonly SceneRendererMaterial[]
   readonly activeNodes: ReadonlySet<string>
@@ -1108,8 +1114,10 @@ function simulateUvmEffectFrame(
     for (let step = steps + 1; step <= last; step += 1) {
       const time = step / EFFECT_STEPS_PER_SECOND
       sampleAt(time)
-      stepFrame.sequenceTimeSeconds = time
-      stepFrame.animationTime = time
+      const loop = options.loopSeconds
+      const clipTime = loop !== undefined && loop > 0 ? time % loop : time
+      stepFrame.sequenceTimeSeconds = clipTime
+      stepFrame.animationTime = clipTime
       const stats = simulation.update(EFFECT_STEP_SECONDS, stepFrame)
       dropped += stats.droppedParticles + stats.droppedRibbons + stats.droppedProjectorSplats
       steps = step
