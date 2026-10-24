@@ -10,7 +10,7 @@ import { createHostMcpPort, createModkitMcpServer, type McpEnvelope, type Modkit
 const coreRoot = resolve(import.meta.dirname, '..', '..', '..')
 // A committed snapshot (.acceptance) keeps the extension still while other sessions edit the live one.
 const blizzardRoot = process.env.MODKIT_BLIZZARD_ROOT ?? resolve(coreRoot, '..', 'modkit-extensions-blizzard')
-const mapPath = process.env.MODKIT_SC2_MCP_MAP ?? 'C:/Apps/StarCraft II/Maps/all-races-coop-maps/02-CradleOfDeath.SC2Map'
+const mapPath = process.env.MODKIT_SC2_MCP_MAP ?? 'F:/GAMES/Blizzard/StarCraft II/Maps/all-races-coop-maps/02-CradleOfDeath.SC2Map'
 let host: ModkitMcpHostPort; let app: ReturnType<typeof createModkitMcpServer>; let client: Client
 const envelope = (value: Awaited<ReturnType<Client['callTool']>>) => value.structuredContent as McpEnvelope
 const digest = async (path: string) => createHash('sha256').update(await readFile(path)).digest('hex')
@@ -48,8 +48,9 @@ describe('installed SC2 map height through generic MCP', () => {
   let copy: string
   let writer: { host: ModkitMcpHostPort; app: ReturnType<typeof createModkitMcpServer>; client: Client }
   const call = async (name: string, args: Record<string, unknown>) => {
-    // A cold host opening a 25 MB folder map with the game's codecs can pass the client's 60 s default.
-    const result = await writer.client.callTool({ name, arguments: args }, { timeout: 170_000 })
+    // Opening the 25 MB folder map with the game's codecs took 107-127 s warm and over 170 s cold on
+    // 25.10 (Blizzard snapshot 55826cdc): far past the client's 60 s default.
+    const result = await writer.client.callTool({ name, arguments: args }, { timeout: 290_000 })
     if (result.isError === true) throw new Error(`${name} failed: ${JSON.stringify(result.structuredContent ?? result.content)}`)
     return result
   }
@@ -140,5 +141,67 @@ describe('installed SC2 map height through generic MCP', () => {
     await call('modkit.undo_edit', { transactionId: committed.receipt.transactionId })
     expect(await files()).toEqual(before)
     await call('modkit.close_subject', { handle })
-  }, 300_000)
+  }, 600_000)
+
+  // The edit the world names must be one the installed map really publishes: a folder map once
+  // named blizzard/sc2-map.edit-world while it publishes blizzard/sc2-map-directory.edit-world.
+  it('moves an object through the edit its world names, commits, reopens and undoes', async () => {
+    const world = async (on: string, query: Record<string, unknown>) => {
+      const result = await writer.client.callTool({ name: 'modkit.world_scene', arguments: { handle: on, ...query } }, { timeout: 290_000 })
+      if (result.isError === true) {
+        // Why the subject has no world is in its open diagnostics (map preview preparation).
+        const inspected = envelope(await call('modkit.inspect', { handle: on }))
+        throw new Error(`world_scene failed: ${JSON.stringify(result.structuredContent)}; open: ${JSON.stringify(inspected.diagnostics)}`)
+      }
+      return envelope(result).data as Record<string, unknown>
+    }
+    // The edit guards the subject's revision (the open envelope's snapshotId); the world's own
+    // snapshotId names the world snapshot and differs from it for an SC2 map.
+    const opened = envelope(await call('modkit.open_subject', { path: copy }))
+    const handle = (opened.data as { handle: string }).handle
+    const info = (await world(handle, { view: 'info' })) as {
+      snapshotId: string
+      facets: { facet: string; layerId: string }[]
+      edit?: { operationId: string; moveObjectKind: string }
+    }
+    if (info.edit === undefined) throw new Error('the SC2 world names no object edit')
+    const layerId = info.facets.find(item => item.facet === 'objects')?.layerId
+    type WorldObject = { id: string; objectId: number; position: { x: number; y: number; z: number } }
+    const objectsOf = async (on: string) =>
+      (await world(on, { view: 'page', facet: 'objects', layerId, limit: 20 }))['items'] as WorldObject[]
+    const [first] = (await objectsOf(handle)).filter(item => typeof item.objectId === 'number')
+    if (first === undefined) throw new Error('the SC2 map lists no object')
+
+    const before = await files()
+    const moved = { ...first.position, x: first.position.x + 1 }
+    const proposal = envelope(
+      await call('modkit.propose_edit', {
+        handle,
+        operationId: info.edit.operationId,
+        input: {
+          expectedSourceRevision: opened.snapshotId,
+          edits: [{ kind: info.edit.moveObjectKind, objectId: first.objectId, patch: { position: moved } }],
+        },
+      }),
+    )
+    const planHandle = (proposal.data as { planHandle?: string } | null)?.planHandle
+    if (planHandle === undefined) throw new Error(`no plan: ${JSON.stringify(proposal)}`)
+    await call('modkit.prepare_edit', { planHandle })
+    const committed = (envelope(await call('modkit.commit_edit', { planHandle })).data as {
+      result: { state: string; receipt: { transactionId: string } }
+    }).result
+    expect(committed.state).toBe('committed')
+    const after = await files()
+    for (const [name, sum] of before) {
+      if (name === 'Objects') expect(after.get(name)).not.toBe(sum)
+      else expect(after.get(name), name).toBe(sum)
+    }
+
+    const reopened = (envelope(await call('modkit.open_subject', { path: copy })).data as { handle: string }).handle
+    expect((await objectsOf(reopened)).find(item => item.id === first.id)?.position.x).toBeCloseTo(moved.x, 3)
+    await call('modkit.close_subject', { handle: reopened })
+    await call('modkit.undo_edit', { transactionId: committed.receipt.transactionId })
+    expect(await files()).toEqual(before)
+    await call('modkit.close_subject', { handle })
+  }, 600_000)
 })
