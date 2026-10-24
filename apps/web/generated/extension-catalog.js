@@ -6950,7 +6950,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ddc9827aaced63672e916c06298eaaceaf7620aed3e7695aa270a8f2d8f337d8',
+        artifactDigest: 'sha256:a94989e8774a0964c1f71aa55869a6c0313dd9361a8422d4fec8b3c915e8047d',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -7053,7 +7053,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/dds/bptc.js':
             'sha256:76b8dd3cc2d5737a1d30991b6a21f3fd06ec1ccbbe52c8dcd730ac3097abbce3',
           'src/dds/codec.js':
-            'sha256:e89bf2af3bed4bda31a80ca20a1dca3f067a255eb0fe8ca6bbdd41f25a3e58d9',
+            'sha256:590004ed5afdb09abc1325456fda57269531b22a7cf8e1cb11034b52e1237a68',
           'src/dds/compressed.js':
             'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
           'src/dds/encode.js':
@@ -7122,7 +7122,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/dds-subresources.test.ts':
-            'sha256:ea9b83fea4ab57169fb98f73cc9f1099419f5a0d12f8e001c12f72506b0bd64e',
+            'sha256:2c760d3287a64d003a7b34db8f26982514661209c3bda724d50ef9b3e9745ec2',
           'test/dds-transform.test.ts':
             'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
@@ -7145,7 +7145,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:1628c8e558ca572edad380f8312146fe71fc4c23c057f84c2babb980993e0956',
         },
         inventoryRecordId:
-          'artifact:sha256:ddc9827aaced63672e916c06298eaaceaf7620aed3e7695aa270a8f2d8f337d8',
+          'artifact:sha256:a94989e8774a0964c1f71aa55869a6c0313dd9361a8422d4fec8b3c915e8047d',
       },
       artifactRoot: 'extensions/images/',
       containers: {

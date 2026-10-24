@@ -482,6 +482,29 @@ describe('DDS formats ported from the legacy decoder', () => {
     expect((await raster.info()).channels).toBe(1)
   })
 
+  it('decodes a legacy A16B16G16R16F surface (D3DFORMAT 113), clamped to 0..1', async () => {
+    /* half floats: 0.5, 1.0, 2.0 (clamped), 0.25 */
+    const pixel = [0x3800, 0x3c00, 0x4000, 0x3400]
+    const surface = new Uint8Array(4 * 4 * 8)
+    const view = new DataView(surface.buffer)
+    for (let index = 0; index < 16; index += 1)
+      pixel.forEach((half, channel) => view.setUint16(index * 8 + channel * 2, half, true))
+    const raster = await rasterOf(
+      buildDds({ width: 4, height: 4, fourCc: String.fromCharCode(113, 0, 0, 0) }, [surface]),
+    )
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([128, 255, 255, 64])
+    expect((await raster.info()).channels).toBe(4)
+  })
+
+  it('decodes a DX10 R32_FLOAT surface as red, green and blue zero, alpha one', async () => {
+    const surface = new Uint8Array(4 * 4 * 4)
+    const view = new DataView(surface.buffer)
+    for (let index = 0; index < 16; index += 1) view.setFloat32(index * 4, 0.75, true)
+    const raster = await rasterOf(buildDds({ width: 4, height: 4, dxgiFormat: 41 }, [surface]))
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([191, 0, 0, 255])
+    expect((await raster.info()).channels).toBe(1)
+  })
+
   it('decodes an alpha-only surface as transparent black carrying the alpha', async () => {
     const bytes = buildDds({ width: 4, height: 4, alphaBits: 8 }, [new Uint8Array(16).fill(0x55)])
     const raster = await rasterOf(bytes)

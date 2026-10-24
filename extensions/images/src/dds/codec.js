@@ -55,6 +55,22 @@ const FOURCC_FORMATS = new Map([
   ['ATI2', { format: 'BC5' }],
   ['BC5U', { format: 'BC5' }],
   ['BC5S', { format: 'BC5', snorm: true }],
+  /*
+   * Floating-point surfaces, which a legacy header names by their D3DFORMAT number in the FourCC
+   * field: D3DFMT_R16F (111) … D3DFMT_A32B32G32R32F (116). Red Alert 3's HDR lens flares are
+   * A16B16G16R16F.
+   */
+  ...[
+    [111, 1, 2],
+    [112, 2, 2],
+    [113, 4, 2],
+    [114, 1, 4],
+    [115, 2, 4],
+    [116, 4, 4],
+  ].map(([code, channels, componentBytes]) => [
+    String.fromCharCode(code, 0, 0, 0),
+    { format: 'float', channels, componentBytes },
+  ]),
 ])
 
 /**
@@ -62,6 +78,13 @@ const FOURCC_FORMATS = new Map([
  * named separately below so the refusal says which format it is, not "unsupported".
  */
 const DECODED_DXGI_FORMATS = new Map([
+  /* Floating-point RGBA, RG and R in 16 and 32 bits (see the legacy D3DFORMAT numbers above). */
+  [2, { format: 'float', channels: 4, componentBytes: 4 }],
+  [10, { format: 'float', channels: 4, componentBytes: 2 }],
+  [16, { format: 'float', channels: 2, componentBytes: 4 }],
+  [34, { format: 'float', channels: 2, componentBytes: 2 }],
+  [41, { format: 'float', channels: 1, componentBytes: 4 }],
+  [54, { format: 'float', channels: 1, componentBytes: 2 }],
   [28, { format: 'rgba-mask', bits: 32, masks: RGBA8_MASKS }],
   [29, { format: 'rgba-mask', bits: 32, masks: RGBA8_MASKS, srgb: true }],
   [70, { format: 'DXT1' }],
@@ -172,6 +195,8 @@ export function parseDds(bytes) {
   let resourceDimension
   let miscFlag
   let miscFlags2
+  /* A floating-point surface's channel count (R, RG or RGBA); its rgbBits sizes the rows. */
+  let channels
   if ((pixelFlags & DDPF_FOURCC) !== 0) {
     if (legacyFourCc === 'DX10') {
       if (bytes.byteLength < 148) throw new TypeError('DDS DX10 header is truncated')
@@ -198,6 +223,10 @@ export function parseDds(bytes) {
         rgbBits = mapped.bits
         masks = mapped.masks
       }
+      if (mapped.format === 'float') {
+        channels = mapped.channels
+        rgbBits = mapped.channels * mapped.componentBytes * 8
+      }
     } else {
       const mapped = FOURCC_FORMATS.get(legacyFourCc)
       if (mapped === undefined) {
@@ -206,6 +235,10 @@ export function parseDds(bytes) {
       format = mapped.format
       snorm = mapped.snorm === true
       premultiplied = mapped.premultiplied === true
+      if (mapped.format === 'float') {
+        channels = mapped.channels
+        rgbBits = mapped.channels * mapped.componentBytes * 8
+      }
     }
   } else if ((pixelFlags & DDPF_RGB) !== 0) {
     rgbBits = headerBits
@@ -244,6 +277,7 @@ export function parseDds(bytes) {
     srgb,
     luminance,
     alphaOnly,
+    ...(channels === undefined ? {} : { channels }),
     ...(dxgiFormat === undefined ? {} : { dxgiFormat }),
     ...(resourceDimension === undefined ? {} : { resourceDimension }),
     ...(miscFlag === undefined ? {} : { miscFlag }),
@@ -303,6 +337,36 @@ function decodeUncompressed(bytes, info, surface, output) {
 }
 
 /**
+ * A floating-point surface (half or single precision, R/RG/RGBA) to rgba8 as the EXR decoder
+ * projects one: each channel clamped to 0..1, no tone mapping; absent green/blue read 0 and an
+ * absent alpha 1, as D3D samples them.
+ */
+async function decodeFloat(bytes, info, surface, output) {
+  const half = info.rgbBits / info.channels === 16
+  const { halfFloatToNumber } = half ? await import('@modkit/codec-kit/texture') : {}
+  const view = viewOf(bytes)
+  const step = info.rgbBits / 8 / info.channels
+  const rowStride = (surface.width * info.rgbBits) / 8
+  const byte = (value) => (Number.isFinite(value) ? Math.round(Math.max(0, Math.min(1, value)) * 255) : value > 0 ? 255 : 0)
+  for (let y = 0; y < surface.height; y += 1)
+    for (let x = 0; x < surface.width; x += 1) {
+      const at = surface.offset + y * rowStride + x * step * info.channels
+      const target = (y * surface.width + x) * 4
+      for (let channel = 0; channel < 4; channel += 1) {
+        const value =
+          channel < info.channels
+            ? half
+              ? halfFloatToNumber(view.getUint16(at + channel * step, true))
+              : view.getFloat32(at + channel * step, true)
+            : channel === 3
+              ? 1
+              : 0
+        output[target + channel] = byte(value)
+      }
+    }
+}
+
+/**
  * Decode one already-resolved surface (a single mip/layer/face/slice) to rgba8.
  *
  * BC6H and BC7 leave through `bptc.js` to codec-kit's runtime, which is why this is async: every
@@ -312,6 +376,10 @@ async function decodeSurface(bytes, info, surface) {
   const output = new Uint8Array(checkedImageBytes(surface.width, surface.height))
   if (info.format === 'rgba-mask') {
     decodeUncompressed(bytes, info, surface, output)
+    return output
+  }
+  if (info.format === 'float') {
+    await decodeFloat(bytes, info, surface, output)
     return output
   }
   if (info.format === 'BC6H' || info.format === 'BC7') {
@@ -335,7 +403,12 @@ async function decodeSurface(bytes, info, surface) {
 /** Human-facing name of the stored encoding, keeping the FourCC the file actually carries. */
 function encodingLabel(info) {
   const kind = info.alphaOnly ? 'alpha' : info.luminance ? 'luminance' : 'RGB'
-  const base = info.format === 'rgba-mask' ? `${info.rgbBits}-bit ${kind}` : info.format
+  const base =
+    info.format === 'rgba-mask'
+      ? `${info.rgbBits}-bit ${kind}`
+      : info.format === 'float'
+        ? `${info.rgbBits / info.channels}-bit float ${['R', 'RG', 'RGB', 'RGBA'][info.channels - 1]}`
+        : info.format
   const spellings = []
   if (info.fourCc !== undefined && info.fourCc !== 'DX10' && info.fourCc !== info.format) {
     spellings.push(info.fourCc)
@@ -362,6 +435,7 @@ function alphaModeOf(info) {
   if (info.premultiplied) return 'premultiplied'
   if (info.format === 'DXT1') return 'straight'
   if (info.format === 'rgba-mask') return info.masks[3] === 0 ? 'none' : 'straight'
+  if (info.format === 'float') return info.channels === 4 ? 'straight' : 'none'
   return 'unknown'
 }
 
@@ -374,6 +448,7 @@ function channelsOf(info) {
   if (info.alphaOnly) return 1
   if (info.luminance) return info.masks[3] === 0 ? 1 : 2
   if (info.format === 'rgba-mask') return info.masks[3] === 0 ? 3 : 4
+  if (info.format === 'float') return info.channels
   return 4
 }
 
