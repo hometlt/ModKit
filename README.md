@@ -66,11 +66,58 @@ one for a particular project without embedding every game's implementation in th
 
 The repository includes general-purpose extensions for archives, images, vector graphics,
 audio, video, models, structured data, and documents. Game-specific support is distributed
-separately; the [Blizzard extensions](https://github.com/hometlt/ModKit-Blizzard) are one example.
+separately; the [Blizzard extensions](https://github.com/hometlt/modkit-extensions-blizzard) are one example.
 
 Applications can load explicitly configured extension directories or use their extension
 management interface. An extension's presence does not imply that every version or feature
 of its formats is supported; inspect its published operations and diagnostics.
+
+## Repositories
+
+GitHub [groups the repositories by topic](https://github.com/search?q=user%3Ahometlt+topic%3Amodkit&type=repositories).
+The [extension topic](https://github.com/search?q=user%3Ahometlt+topic%3Amodkit-extension&type=repositories)
+shows the separately maintained game and format modules.
+
+| Platform repository | Purpose |
+| --- | --- |
+| [ModKit](https://github.com/hometlt/ModKit) | Core applications, shared SDK and host services. |
+| [registry](https://github.com/hometlt/registry) | Extension catalog data, schemas and signing tools. |
+| [modkit-gallery](https://github.com/hometlt/modkit-gallery) | Verified model, animation and map previews. |
+
+| Extension repository | Focus |
+| --- | --- |
+| [modkit-extensions-annihilation](https://github.com/hometlt/modkit-extensions-annihilation) | Total Annihilation and Spring/Recoil extensions, including Beyond All Reason formats and shared engine codecs. |
+| [modkit-extensions-blizzard](https://github.com/hometlt/modkit-extensions-blizzard) | Blizzard extensions for SC2, Warcraft and Diablo: CASC, MPQ, M3, BLP, data, maps and replays. |
+| [modkit-extensions-croteam](https://github.com/hometlt/modkit-extensions-croteam) | Serious Sam HD: The First Encounter inspection and read-only unit media conversion. |
+| [modkit-extensions-documents](https://github.com/hometlt/modkit-extensions-documents) | Inspection of AI, Blend, CDR, DOCX, Drawio, Figma, PDF, PPTX, PSD, Visio and XLSX documents. |
+| [modkit-extensions-dune2000](https://github.com/hometlt/modkit-extensions-dune2000) | Dune 2000 installation discovery, MAP terrain and MIS mission support. |
+| [modkit-extensions-ea](https://github.com/hometlt/modkit-extensions-ea) | Electronic Arts, Westwood and SAGE game extensions and file formats. |
+| [modkit-extensions-empire-earth](https://github.com/hometlt/modkit-extensions-empire-earth) | Empire Earth SSA archive inspection and extraction. |
+| [modkit-extensions-ensemble](https://github.com/hometlt/modkit-extensions-ensemble) | Age of Empires III, Age of Mythology and Halo Wars DE formats. |
+| [modkit-extensions-facefx](https://github.com/hometlt/modkit-extensions-facefx) | FaceFX actor and animation-set inspection, facial curves and bounded edits. |
+| [modkit-extensions-flash](https://github.com/hometlt/modkit-extensions-flash) | FLA/XFL, FLV, SWF and CFX8 inspection and media extraction. |
+| [modkit-extensions-fmod](https://github.com/hometlt/modkit-extensions-fmod) | FMOD FSB sound-bank inspection and supported audio streams. |
+| [modkit-extensions-frostgiant](https://github.com/hometlt/modkit-extensions-frostgiant) | Stormgate installation, content and resolved-data support. |
+| [modkit-extensions-gas-powered](https://github.com/hometlt/modkit-extensions-gas-powered) | Supreme Commander: Forged Alliance and Supreme Commander 2 formats. |
+| [modkit-extensions-idsoftware](https://github.com/hometlt/modkit-extensions-idsoftware) | id Tech 1–4 game formats, including Quake PAK and MDL. |
+| [modkit-extensions-luau](https://github.com/hometlt/modkit-extensions-luau) | Optional Luau scripting runtime for Modkit, built from the official VM to WebAssembly. |
+| [modkit-extensions-minecraft](https://github.com/hometlt/modkit-extensions-minecraft) | Minecraft Java world, model and asset support for Modkit. |
+| [modkit-extensions-nival](https://github.com/hometlt/modkit-extensions-nival) | Heroes of Might and Magic V models, skeletons, animation and textures. |
+| [modkit-extensions-petroglyph](https://github.com/hometlt/modkit-extensions-petroglyph) | Petroglyph GlyphX and Grey Goo game content support. |
+| [modkit-extensions-ps1](https://github.com/hometlt/modkit-extensions-ps1) | PlayStation 1 CUE/BIN and XA audio inspection. |
+| [modkit-extensions-rad](https://github.com/hometlt/modkit-extensions-rad) | Optional RAD Oodle decompression and RAD Game Tools video support. |
+| [modkit-extensions-realitypump](https://github.com/hometlt/modkit-extensions-realitypump) | Earth 2150 and Earth 2160 archives, models, animation and map resources. |
+| [modkit-extensions-relic](https://github.com/hometlt/modkit-extensions-relic) | Relic Essence formats for Dawn of War I, II and III. |
+| [modkit-extensions-renegade](https://github.com/hometlt/modkit-extensions-renegade) | W3D game installation and content-source discovery; models and MIX stay with EA extensions. |
+| [modkit-extensions-roblox](https://github.com/hometlt/modkit-extensions-roblox) | Roblox places, models, meshes, animation, terrain and Rojo project support. |
+| [modkit-extensions-starship-troopers](https://github.com/hometlt/modkit-extensions-starship-troopers) | Starship Troopers: Terran Command content and game data extension. |
+| [modkit-extensions-tindalos](https://github.com/hometlt/modkit-extensions-tindalos) | Battlefleet Gothic: Armada II content and model support. |
+| [modkit-extensions-uncapped](https://github.com/hometlt/modkit-extensions-uncapped) | Battle Aces game content, models and native asset preview support. |
+| [modkit-extensions-unity](https://github.com/hometlt/modkit-extensions-unity) | Shared Unity Engine readers and asset formats for game extensions. |
+| [modkit-extensions-unreal](https://github.com/hometlt/modkit-extensions-unreal) | Unreal Engine packages and content formats for game extensions. |
+| [modkit-extensions-valve](https://github.com/hometlt/modkit-extensions-valve) | Half-Life 2 VPK, Source models, VMT materials and VTF textures. |
+| [modkit-extensions-warzone](https://github.com/hometlt/modkit-extensions-warzone) | Warzone 2100 game files, models, maps and data. |
+| [modkit-extensions-wwise](https://github.com/hometlt/modkit-extensions-wwise) | Wwise BNK and WEM audio plus AKPK/PCK package inspection. |
 
 ## Build and run from source
 
