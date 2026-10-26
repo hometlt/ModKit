@@ -81,7 +81,7 @@ shows the separately maintained game and format modules.
 | Platform repository | Purpose |
 | --- | --- |
 | [ModKit](https://github.com/hometlt/ModKit) | Core applications, shared SDK and host services. |
-| [registry](https://github.com/hometlt/registry) | Extension catalog data, schemas and signing tools. |
+| [Modkit-Registry](https://github.com/hometlt/Modkit-Registry) | Extension catalog data, schemas and signing tools. |
 | [modkit-gallery](https://github.com/hometlt/modkit-gallery) | Verified model, animation and map previews. |
 
 | Extension repository | Focus |
